@@ -1,1 +1,8 @@
 node_modules
+dist/
+*.env
+.env
+.env.local
+
+# JSON file store (runtime data, not committed)
+data/subscriptions.json

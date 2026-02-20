@@ -1,0 +1,92 @@
+﻿  console.log
+    [Store] Loaded 1 subscription(s) from C:\Users\dnara\Desktop\Projects\cashflow\data\subscriptions.json
+
+      at loadFromDisk (src/services/subscriptionStore.ts:67:13)
+
+node : (node:31084) ExperimentalWarning: VM Modules is an experimental feature 
+and might change at any time
+At line:1 char:1
++ node --experimental-vm-modules node_modules/jest/bin/jest.js --runInB ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:31084) Ex...nge at any time 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [2026-02-20T11:19:30.931Z] GET /health ΓåÆ 200 (3ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.945Z] GET /api/premium/hello ΓåÆ 402 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.952Z] GET /api/premium/hello ΓåÆ 200 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.969Z] POST /verify-payment ΓåÆ 400 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.976Z] POST /deploy-subscription ΓåÆ 400 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.981Z] GET /payment/challenge ΓåÆ 200 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+  console.log
+    [2026-02-20T11:19:30.987Z] GET /subscription/list ΓåÆ 200 (1ms)
+
+      at ServerResponse.<anonymous> (src/server/index.ts:36:13)
+
+PASS tests/subscription.test.ts
+  Crypto utils
+    ΓêÜ generateKeyPair returns a valid BCH key pair (10 ms)
+    ΓêÜ wifToKeyPair round-trips through a generated key pair (10 ms)
+    ΓêÜ addressToPkh extracts 20-byte hash from a chipnet address (3 ms)
+    ΓêÜ int32ToLeBytes / leBytesToInt32 round-trip (2 ms)
+    ΓêÜ buildNftCommitment / parseNftCommitment round-trip (1 ms)
+  BIP-21 payment URI
+    ΓêÜ builds a valid BIP-21 URI (1 ms)
+    ΓêÜ includes optional label and message fields (1 ms)
+    ΓêÜ includes tokenCategory (c= param) for CashToken payments
+    ΓêÜ buildPerCallUri includes nonce field
+  JWT utils
+    ΓêÜ signPerCallToken issues a verifiable percall token (4 ms)
+    ΓêÜ signSubscriptionToken issues a verifiable subscription token (1 ms)
+    ΓêÜ verifyAccessToken returns null for tampered token (1 ms)
+  Subscription store
+    ΓêÜ getByAddress returns the subscription (1 ms)
+    ΓêÜ getByCategory returns the subscription (1 ms)
+    ΓêÜ updateSubscription patches fields (1 ms)
+    ΓêÜ getAllSubscriptions returns all records
+  Nonce store
+    ΓêÜ storeNonce and consumeNonce (single use)
+  Contract instantiation
+    ΓêÜ produces a deterministic contract address for given params (6 ms)
+    ΓêÜ produces different addresses for different intervalBlocks (3 ms)
+  HTTP server routes
+    ΓêÜ GET /health returns 200 (26 ms)
+    ΓêÜ GET /api/premium/hello without token returns 402 (8 ms)
+    ΓêÜ GET /api/premium/hello with valid percall JWT returns 200 (6 ms)
+    ΓêÜ POST /verify-payment without body returns 400 (17 ms)
+    ΓêÜ POST /deploy-subscription without subscriberAddress returns 400 (7 ms)
+    ΓêÜ GET /payment/challenge returns a valid challenge object (5 ms)
+    ΓêÜ GET /subscription/list returns an array (5 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        1.563 s, estimated 2 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect 
+async operations that kept running after all tests finished?

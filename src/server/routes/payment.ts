@@ -106,7 +106,7 @@ paymentRouter.get('/payment/challenge', (req: Request, res: Response): void => {
   const apiPath    = typeof req.query['path']       === 'string' ? req.query['path'] : '/api/premium';
   const amountSats = typeof req.query['amountSats'] === 'string'
     ? parseInt(req.query['amountSats'], 10)
-    : parseInt(process.env['DEFAULT_PERCALL_RATE_SATS'] ?? '100', 10);
+    : parseInt(process.env['DEFAULT_PERCALL_RATE_SATS'] ?? '546', 10);
 
   const nonce      = uuidv4();
   const expiresAt  = Date.now() + 120_000;

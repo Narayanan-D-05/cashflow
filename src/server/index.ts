@@ -41,6 +41,10 @@ app.use((req, res, next) => {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // Health check — no auth
+app.get('/', (_req, res) => {
+  res.redirect('/docs');
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CashFlow402', version: '1.0.0', timestamp: new Date().toISOString() });
 });

@@ -1,0 +1,149 @@
+/**
+ * lib/api.ts
+ * Typed client for the CashFlow402 Express backend (localhost:3000).
+ *
+ * All bigint-like fields (e.g. balance, authorizedSats) come from the API
+ * as strings (JSON can't represent BigInt); we expose them as-is here to
+ * avoid runtime issues in the browser. Components should convert with
+ * Number() when displaying.
+ */
+
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
+// ─── Types (mirrors backend src/types.ts but browser-safe) ───────────────────
+
+export type SubscriptionStatus = "active" | "paused" | "expired" | "cancelled";
+
+export interface SubscriptionRecord {
+  contractAddress:   string;
+  tokenCategory:     string;
+  merchantPkh:       string;
+  subscriberPkh:     string;
+  subscriberAddress: string;
+  merchantAddress:   string;
+  intervalBlocks:    number;
+  authorizedSats:    string;   // BigInt serialised as string from backend
+  lastClaimBlock:    number;
+  balance:           string;   // BigInt serialised as string from backend
+  status:            SubscriptionStatus;
+  createdAt:         string;
+  updatedAt:         string;
+}
+
+export interface CreateSubscriptionInput {
+  merchantAddress:   string;
+  subscriberPrivKey: string;
+  intervalBlocks:    number;
+  authorizedSats:    number;
+  initialDeposit:    number;
+}
+
+export interface VerifyResult {
+  accessToken: string;
+  expiresInSeconds: number;
+  // legacy alias just in case
+  token?: string;
+}
+
+// ─── Raw fetch helpers ────────────────────────────────────────────────────────
+
+async function get<T>(path: string, headers?: Record<string, string>): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...headers },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`GET ${path} → ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function post<T>(
+  path: string,
+  body: unknown,
+  headers?: Record<string, string>,
+): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`POST ${path} → ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+// ─── Challenge response ─────────────────────────────────────────────────────
+export interface ChallengeResult {
+  paymentUri:      string;
+  amountSats:      number;
+  merchantAddress: string;
+  nonce:           string;
+  verifyUrl:       string;
+  expiresAt:       number;
+}
+
+export const api = {
+  /** List all subscriptions */
+  getAllSubscriptions(): Promise<SubscriptionRecord[]> {
+    return get<SubscriptionRecord[]>("/subscription/list");
+  },
+
+  /** Get single subscription by contractAddress */
+  getSubscription(contractAddress: string): Promise<SubscriptionRecord> {
+    return get<SubscriptionRecord>(
+      `/subscription/status/${encodeURIComponent(contractAddress)}`,
+    );
+  },
+
+  /** Create a new subscription */
+  createSubscription(input: CreateSubscriptionInput): Promise<SubscriptionRecord> {
+    return post<SubscriptionRecord>("/deploy-subscription", input);
+  },
+
+  /**
+   * Request a per-call payment challenge from the backend.
+   * Returns paymentUri (BIP-21), nonce, amount, merchant address.
+   * GET /payment/challenge
+   */
+  getChallenge(params?: { amountSats?: number; path?: string }): Promise<ChallengeResult> {
+    const qs = new URLSearchParams();
+    if (params?.path)       qs.set("path",       params.path);
+    if (params?.amountSats) qs.set("amountSats", String(params.amountSats));
+    const query = qs.toString() ? `?${qs}` : "";
+    return get<ChallengeResult>(`/payment/challenge${query}`);
+  },
+
+  /**
+   * Verify a real on-chain BCH payment and get an access token.
+   * POST /verify-payment  { txid, nonce }
+   */
+  verifyPayment(params: { nonce: string; txid: string }): Promise<string> {
+    return post<VerifyResult>("/verify-payment", params).then(r => r.accessToken);
+  },
+
+  /** Claim subscription funds (merchant). POST /subscription/claim */
+  claimSubscription(contractAddress: string): Promise<{ txid: string }> {
+    return post<{ txid: string }>("/subscription/claim", { contractAddress });
+  },
+
+  /** Cancel a subscription. POST /subscription/cancel */
+  cancelSubscription(contractAddress: string): Promise<{ txid: string }> {
+    return post<{ txid: string }>("/subscription/cancel", { contractAddress });
+  },
+
+  // ─── Raw fetch utilities for demo page ───────────────────────────────────
+
+  raw(method: string, path: string): Promise<Response> {
+    return fetch(`${BASE}${path}`, { method });
+  },
+
+  rawWithToken(method: string, path: string, token: string): Promise<Response> {
+    return fetch(`${BASE}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+};

@@ -10,6 +10,7 @@
  */
 
 import { ElectrumClient, ElectrumClientEvents } from '@electrum-cash/network';
+import { ElectrumWebSocket } from '@electrum-cash/web-socket';
 import { addressToElectrumScripthash } from '../utils/crypto.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,12 +54,11 @@ export async function connectElectrum(): Promise<ElectrumClient<ElectrumClientEv
   const protocol = process.env['ELECTRUM_PROTOCOL'] ?? 'wss';
   const port     = parseInt(process.env['ELECTRUM_PORT'] ?? '50004', 10);
 
-  // @electrum-cash/network v4 constructs with: (application, version, hostname, options?)
-  // We pass the host as a string; it connects with WSS by default.
-  client = new ElectrumClient<ElectrumClientEvents>('CashFlow402', '1.5.1', protocol === 'wss'
-    ? `wss://${host}:${port}`
-    : `ws://${host}:${port}`
-  );
+  // @electrum-cash/network v4: pass a pre-built ElectrumWebSocket so we control host/port/SSL.
+  // Passing a full URL string causes the library to treat it as a hostname and double-append the port.
+  const encrypted = protocol === 'wss';
+  const socket = new ElectrumWebSocket(host, port, encrypted);
+  client = new ElectrumClient<ElectrumClientEvents>('CashFlow402', '1.5.1', socket);
 
   // Wire up notification handler for address subscriptions
   client.on('notification', (notification: unknown) => {

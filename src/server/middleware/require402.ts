@@ -26,7 +26,7 @@ function getMerchantAddress(): string {
 }
 
 function getDefaultRateSats(): number {
-  return parseInt(process.env['DEFAULT_PERCALL_RATE_SATS'] ?? '100', 10);
+  return parseInt(process.env['DEFAULT_PERCALL_RATE_SATS'] ?? '546', 10);
 }
 
 function getHostUrl(req: Request): string {
