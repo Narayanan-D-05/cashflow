@@ -1,0 +1,43 @@
+{
+  "name": "cashflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Narayanan-D-05/cashflow.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Narayanan-D-05/cashflow/issues"
+  },
+  "homepage": "https://github.com/Narayanan-D-05/cashflow#readme",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@bitauth/libauth": "^3.1.0-next.8",
+    "@electrum-cash/network": "^4.2.2",
+    "@types/jest": "^30.0.0",
+    "axios": "^1.13.5",
+    "cashscript": "^0.12.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jest": "^30.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "ts-jest": "^29.4.6",
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  }
+}
