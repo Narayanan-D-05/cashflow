@@ -11,11 +11,13 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import { paymentRouter }      from './routes/payment.js';
 import { subscriptionRouter } from './routes/subscription.js';
 import { webhookRouter }      from './routes/webhook.js';
 import { require402 }         from './middleware/require402.js';
 import { connectElectrum }    from '../services/electrumService.js';
+import { openApiSpec }        from './openapi.js';
 
 const app  = express();
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
@@ -42,6 +44,17 @@ app.use((req, res, next) => {
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CashFlow402', version: '1.0.0', timestamp: new Date().toISOString() });
 });
+
+// OpenAPI spec (machine-readable)
+app.get('/openapi.json', (_req, res) => {
+  res.json(openApiSpec);
+});
+
+// Swagger UI (human-readable docs at /docs)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec as Parameters<typeof swaggerUi.setup>[0], {
+  customSiteTitle: 'CashFlow402 API Docs',
+  swaggerOptions: { persistAuthorization: true },
+}));
 
 // Payment verification (per-call flow)
 app.use('/', paymentRouter);
@@ -115,8 +128,11 @@ async function start() {
     console.log(`║  CashFlow402 Backend  •  v1.0                        ║`);
     console.log(`║  Network: ${(process.env['BCH_NETWORK'] ?? 'chipnet').padEnd(42)}║`);
     console.log(`║  Server:  http://localhost:${PORT}${' '.repeat(25)}║`);
+    console.log(`║  Docs:    http://localhost:${PORT}/docs${' '.repeat(21)}║`);
     console.log(`╠══════════════════════════════════════════════════════╣`);
     console.log(`║  GET  /health                 — liveness check       ║`);
+    console.log(`║  GET  /docs                   — Swagger UI           ║`);
+    console.log(`║  GET  /openapi.json           — raw spec             ║`);
     console.log(`║  GET  /payment/challenge      — get a 402 challenge  ║`);
     console.log(`║  POST /verify-payment         — verify BCH payment   ║`);
     console.log(`║  POST /deploy-subscription    — create subscription  ║`);
@@ -127,9 +143,14 @@ async function start() {
   });
 }
 
-start().catch(err => {
-  console.error('[CashFlow402] Fatal startup error:', err);
-  process.exit(1);
-});
+// Only start the server when this file is the direct entry point.
+// Jest sets JEST_WORKER_ID in all test workers — skip startup during tests
+// so app.listen() never fires and Jest exits cleanly.
+if (!process.env['JEST_WORKER_ID']) {
+  start().catch(err => {
+    console.error('[CashFlow402] Fatal startup error:', err);
+    process.exit(1);
+  });
+}
 
 export { app };

@@ -1,23 +1,59 @@
 {
-  "name": "cashflow",
+  "name": "@narayanan-me/cashflow402",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "BCH-native HTTP-402 micropayment and CashToken subscription protocol — pay-per-call and recurring subscriptions backed by Bitcoin Cash smart contracts.",
+  "main": "./dist/sdk/index.js",
+  "types": "./dist/sdk/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/sdk/index.js",
+      "types":  "./dist/sdk/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server/index.js",
+      "types":  "./dist/server/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "contracts/",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
   "scripts": {
-    "dev": "tsx src/server/index.ts",
-    "build": "tsc",
-    "start": "node dist/server/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
-    "compile-contracts": "cashc contracts/AutoPaySubscription.cash -o src/contracts/AutoPaySubscription.json"
+    "dev":               "tsx src/server/index.ts",
+    "build":             "tsc",
+    "start":             "node dist/server/index.js",
+    "test":              "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "compile-contracts": "cashc contracts/AutoPaySubscription.cash -o src/contracts/AutoPaySubscription.json",
+    "chipnet-e2e":       "tsx scripts/chipnet-e2e.ts",
+    "prepublishOnly":    "npm run build && npm test"
+  },
+  "keywords": [
+    "bitcoin-cash",
+    "BCH",
+    "HTTP-402",
+    "micropayments",
+    "cashtoken",
+    "subscription",
+    "cashscript",
+    "covenant",
+    "web3",
+    "payment-channel"
+  ],
+  "author": "Narayanan D <hi@cashflow402.dev>",
+  "license": "ISC",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Narayanan-D-05/cashflow.git"
+    "url":  "git+https://github.com/Narayanan-D-05/cashflow.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/Narayanan-D-05/cashflow/issues"
   },
@@ -29,6 +65,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.0",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
     "jest": "^30.2.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",
@@ -45,6 +82,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"
   }

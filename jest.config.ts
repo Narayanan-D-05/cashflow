@@ -19,9 +19,9 @@ const config: JestConfigWithTsJest = {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        useESM:        true,
-        tsconfig:      './tsconfig.json',
-        diagnostics:   false,  // disable ts-jest type-check during tests for speed
+        useESM:           true,
+        tsconfig:         './tsconfig.json',
+        diagnostics:      false,  // disable ts-jest type-check during tests for speed
       },
     ],
   },
