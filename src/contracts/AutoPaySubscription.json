@@ -1,0 +1,119 @@
+{
+  "contractName": "AutoPaySubscription",
+  "constructorInputs": [
+    {
+      "name": "merchantPkh",
+      "type": "bytes20"
+    },
+    {
+      "name": "subscriberPkh",
+      "type": "bytes20"
+    },
+    {
+      "name": "intervalBlocks",
+      "type": "int"
+    }
+  ],
+  "abi": [
+    {
+      "name": "claim",
+      "inputs": [
+        {
+          "name": "merchantPk",
+          "type": "pubkey"
+        },
+        {
+          "name": "merchantSig",
+          "type": "sig"
+        }
+      ]
+    },
+    {
+      "name": "cancel",
+      "inputs": [
+        {
+          "name": "subscriberPk",
+          "type": "pubkey"
+        },
+        {
+          "name": "subscriberSig",
+          "type": "sig"
+        }
+      ]
+    }
+  ],
+  "bytecode": "OP_3 OP_PICK OP_0 OP_NUMEQUAL OP_IF OP_5 OP_ROLL OP_5 OP_PICK OP_CHECKSIGVERIFY OP_4 OP_ROLL OP_HASH160 OP_OVER OP_EQUALVERIFY OP_INPUTINDEX OP_UTXOTOKENCOMMITMENT OP_DUP OP_4 OP_SPLIT OP_DROP OP_BIN2NUM OP_OVER OP_4 OP_SPLIT OP_NIP OP_BIN2NUM OP_TXLOCKTIME OP_ROT OP_6 OP_ROLL OP_ADD OP_GREATERTHANOREQUAL OP_VERIFY OP_INPUTINDEX OP_UTXOVALUE dc05 OP_OVER OP_3 OP_PICK OP_2 OP_PICK OP_ADD OP_GREATERTHANOREQUAL OP_VERIFY OP_TXLOCKTIME OP_4 OP_NUM2BIN OP_4 OP_ROLL OP_4 OP_SPLIT OP_NIP OP_CAT OP_ROT OP_3 OP_PICK OP_SUB OP_ROT OP_SUB OP_0 OP_OUTPUTBYTECODE OP_INPUTINDEX OP_UTXOBYTECODE OP_EQUALVERIFY OP_0 OP_OUTPUTVALUE OP_NUMEQUALVERIFY OP_0 OP_OUTPUTTOKENCOMMITMENT OP_EQUALVERIFY OP_0 OP_OUTPUTTOKENCATEGORY OP_INPUTINDEX OP_UTXOTOKENCATEGORY OP_EQUALVERIFY OP_1 OP_OUTPUTBYTECODE 76a914 OP_3 OP_ROLL OP_CAT 88ac OP_CAT OP_EQUALVERIFY OP_1 OP_OUTPUTVALUE OP_NUMEQUAL OP_NIP OP_NIP OP_ELSE OP_3 OP_ROLL OP_1 OP_NUMEQUALVERIFY OP_4 OP_ROLL OP_4 OP_PICK OP_CHECKSIGVERIFY OP_3 OP_ROLL OP_HASH160 OP_2 OP_PICK OP_EQUALVERIFY OP_INPUTINDEX OP_UTXOVALUE dc05 OP_0 OP_OUTPUTBYTECODE 76a914 OP_5 OP_ROLL OP_CAT 88ac OP_CAT OP_EQUALVERIFY OP_0 OP_OUTPUTVALUE OP_ROT OP_ROT OP_SUB OP_GREATERTHANOREQUAL OP_VERIFY OP_0 OP_OUTPUTTOKENCATEGORY OP_0 OP_EQUAL OP_NIP OP_NIP OP_ENDIF",
+  "source": "pragma cashscript ^0.12.0;\r\n\r\n/**\r\n * AutoPaySubscription\r\n *\r\n * A non-custodial recurring pull-payment covenant on BCH using CashTokens (mutable NFT).\r\n *\r\n * The contract UTXO holds:\r\n *   - BCH balance    — subscription credits deposited by the subscriber\r\n *   - Mutable NFT    — on-chain subscription state (lastClaimBlock + authorizedSats)\r\n *\r\n * ── NFT commitment layout (8 bytes) ──────────────────────────────────────────\r\n *   bytes [0..3]  lastClaimBlock  (int32 little-endian) — block height of last merchant claim\r\n *   bytes [4..7]  authorizedSats  (int32 little-endian) — max sats merchant may claim per interval\r\n *\r\n * ── Constructor parameters (baked into script bytecode, immutable) ────────────\r\n *   merchantPkh     — merchant's P2PKH hash (20 bytes)\r\n *   subscriberPkh   — subscriber's P2PKH hash (20 bytes)\r\n *   intervalBlocks  — BCH blocks between allowed claims (e.g. 144 ≈ 1 day)\r\n *\r\n * ── Spending paths ─────────────────────────────────────────────────────────────\r\n *   claim()   — merchant pulls one interval's authorized payment\r\n *   cancel()  — subscriber terminates subscription and recovers remaining balance\r\n */\r\ncontract AutoPaySubscription(\r\n    bytes20 merchantPkh,\r\n    bytes20 subscriberPkh,\r\n    int intervalBlocks\r\n) {\r\n    /**\r\n     * claim()\r\n     *\r\n     * The merchant calls this once per interval to withdraw their authorized payment.\r\n     *\r\n     * Required tx structure:\r\n     *   inputs:   [0] this contract UTXO  (BCH + mutable NFT)\r\n     *   outputs:  [0] this contract again (reduced BCH + updated NFT commitment)\r\n     *             [1] merchant P2PKH      (exactly authorizedSats)\r\n     *\r\n     * tx.locktime MUST be set to the current block height — enforces the interval.\r\n     */\r\n    function claim(pubkey merchantPk, sig merchantSig) {\r\n        // ── 1. Verify merchant identity ───────────────────────────────────────\r\n        require(checkSig(merchantSig, merchantPk));\r\n        require(hash160(merchantPk) == merchantPkh);\r\n\r\n        // ── 2. Decode subscription state from this input's mutable NFT ────────\r\n        bytes nftData       = tx.inputs[this.activeInputIndex].nftCommitment;\r\n        int lastClaimBlock  = int(nftData.split(4)[0]);\r\n        int authorizedSats  = int(nftData.split(4)[1]);\r\n\r\n        // ── 3. Enforce interval: tx.locktime must be ≥ lastClaim + interval ───\r\n        require(tx.locktime >= lastClaimBlock + intervalBlocks);\r\n\r\n        // ── 4. Verify contract has enough funds for merchant payout + miner fee\r\n        int inputValue = tx.inputs[this.activeInputIndex].value;\r\n        int minerFee   = 1500;\r\n        require(inputValue >= authorizedSats + minerFee);\r\n\r\n        // ── 5. Build updated NFT commitment (new lastClaimBlock, same rate) ───\r\n        bytes newCommitment = bytes4(tx.locktime) + nftData.split(4)[1];\r\n\r\n        // ── 6. Output 0: contract self-output with updated NFT and new balance ─\r\n        int contractBalance = inputValue - authorizedSats - minerFee;\r\n        require(tx.outputs[0].lockingBytecode == tx.inputs[this.activeInputIndex].lockingBytecode);\r\n        require(tx.outputs[0].value           == contractBalance);\r\n        require(tx.outputs[0].nftCommitment   == newCommitment);\r\n        require(tx.outputs[0].tokenCategory   == tx.inputs[this.activeInputIndex].tokenCategory);\r\n\r\n        // ── 7. Output 1: merchant receives their authorized payment ────────────\r\n        require(tx.outputs[1].lockingBytecode == new LockingBytecodeP2PKH(merchantPkh));\r\n        require(tx.outputs[1].value           == authorizedSats);\r\n    }\r\n\r\n    /**\r\n     * cancel()\r\n     *\r\n     * The subscriber terminates the subscription and recovers remaining balance.\r\n     * The mutable NFT is deliberately NOT forwarded — subscription is destroyed.\r\n     *\r\n     * Required tx structure:\r\n     *   inputs:   [0] this contract UTXO\r\n     *   outputs:  [0] subscriber P2PKH  (full remaining balance minus miner fee)\r\n     */\r\n    function cancel(pubkey subscriberPk, sig subscriberSig) {\r\n        // ── 1. Verify subscriber identity ────────────────────────────────────\r\n        require(checkSig(subscriberSig, subscriberPk));\r\n        require(hash160(subscriberPk) == subscriberPkh);\r\n\r\n        // ── 2. Return remaining balance to subscriber ─────────────────────────\r\n        int inputValue = tx.inputs[this.activeInputIndex].value;\r\n        int minerFee   = 1500;\r\n\r\n        require(tx.outputs[0].lockingBytecode == new LockingBytecodeP2PKH(subscriberPkh));\r\n        require(tx.outputs[0].value           >= inputValue - minerFee);\r\n\r\n        // ── 3. Enforce NFT destruction (no token category in subscriber output)\r\n        require(tx.outputs[0].tokenCategory   == 0x);\r\n    }\r\n}\r\n",
+  "debug": {
+    "bytecode": "5379009c63557a5579ad547aa97888c0cf76547f758178547f7781c57b567a93a269c0c602dc05785379527993a269c55480547a547f777e7b5379947b9400cdc0c78800cc9d00d28800d1c0ce8851cd0376a914537a7e0288ac7e8851cc9c777767537a519d547a5479ad537aa9527988c0c602dc0500cd0376a914557a7e0288ac7e8800cc7b7b94a26900d10087777768",
+    "sourceMap": "42:4:73:5;;;;;44:25:44:36;;:38::48;;:8::51:1;45:24:45:34:0;;:16::35:1;:39::50:0;:8::52:1;48:40:48:61:0;:30::76:1;49:34:49:41:0;:48::49;:34::50:1;:::53;:30::54;50:34:50:41:0;:48::49;:34::50:1;:::53;:30::54;53:16:53:27:0;:31::45;:48::62;;:31:::1;:16;:8::64;56:35:56:56:0;:25::63:1;57::57:29:0;58:16:58:26;:30::44;;:47::55;;:30:::1;:16;:8::57;61:37:61:48:0;:30::49:1;;:52::59:0;;:66::67;:52::68:1;:::71;:30;64::64:40:0;:43::57;;:30:::1;:60::68:0;:30:::1;65:27:65:28:0;:16::45:1;:59::80:0;:49::97:1;:8::99;66:27:66:28:0;:16::35:1;:8::66;67:27:67:28:0;:16::43:1;:8::64;68:27:68:28:0;:16::43:1;:59::80:0;:49::95:1;:8::97;71:27:71:28:0;:16::45:1;:49::86:0;:74::85;;:49::86:1;;;:8::88;72:27:72:28:0;:16::35:1;:8::65;42:4:73:5;;;85::99::0;;;;87:25:87:38;;:40::52;;:8::55:1;88:24:88:36:0;;:16::37:1;:41::54:0;;:8::56:1;91:35:91::0;:25::63:1;92::92:29:0;94:27:94:28;:16::45:1;:49::88:0;:74::87;;:49::88:1;;;:8::90;95:27:95:28:0;:16::35:1;:49::59:0;:62::70;:49:::1;:16;:8::72;98:27:98:28:0;:16::43:1;:49::51:0;:8::53:1;85:4:99:5;;25:0:100:1",
+    "logs": [],
+    "requires": [
+      {
+        "ip": 12,
+        "line": 44
+      },
+      {
+        "ip": 17,
+        "line": 45
+      },
+      {
+        "ip": 36,
+        "line": 53
+      },
+      {
+        "ip": 47,
+        "line": 58
+      },
+      {
+        "ip": 67,
+        "line": 65
+      },
+      {
+        "ip": 70,
+        "line": 66
+      },
+      {
+        "ip": 73,
+        "line": 67
+      },
+      {
+        "ip": 78,
+        "line": 68
+      },
+      {
+        "ip": 87,
+        "line": 71
+      },
+      {
+        "ip": 91,
+        "line": 72
+      },
+      {
+        "ip": 102,
+        "line": 87
+      },
+      {
+        "ip": 108,
+        "line": 88
+      },
+      {
+        "ip": 120,
+        "line": 94
+      },
+      {
+        "ip": 127,
+        "line": 95
+      },
+      {
+        "ip": 132,
+        "line": 98
+      }
+    ]
+  },
+  "compiler": {
+    "name": "cashc",
+    "version": "0.12.1"
+  },
+  "updatedAt": "2026-02-20T07:35:46.916Z"
+}

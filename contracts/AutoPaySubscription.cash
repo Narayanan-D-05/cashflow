@@ -1,0 +1,100 @@
+pragma cashscript ^0.12.0;
+
+/**
+ * AutoPaySubscription
+ *
+ * A non-custodial recurring pull-payment covenant on BCH using CashTokens (mutable NFT).
+ *
+ * The contract UTXO holds:
+ *   - BCH balance    — subscription credits deposited by the subscriber
+ *   - Mutable NFT    — on-chain subscription state (lastClaimBlock + authorizedSats)
+ *
+ * ── NFT commitment layout (8 bytes) ──────────────────────────────────────────
+ *   bytes [0..3]  lastClaimBlock  (int32 little-endian) — block height of last merchant claim
+ *   bytes [4..7]  authorizedSats  (int32 little-endian) — max sats merchant may claim per interval
+ *
+ * ── Constructor parameters (baked into script bytecode, immutable) ────────────
+ *   merchantPkh     — merchant's P2PKH hash (20 bytes)
+ *   subscriberPkh   — subscriber's P2PKH hash (20 bytes)
+ *   intervalBlocks  — BCH blocks between allowed claims (e.g. 144 ≈ 1 day)
+ *
+ * ── Spending paths ─────────────────────────────────────────────────────────────
+ *   claim()   — merchant pulls one interval's authorized payment
+ *   cancel()  — subscriber terminates subscription and recovers remaining balance
+ */
+contract AutoPaySubscription(
+    bytes20 merchantPkh,
+    bytes20 subscriberPkh,
+    int intervalBlocks
+) {
+    /**
+     * claim()
+     *
+     * The merchant calls this once per interval to withdraw their authorized payment.
+     *
+     * Required tx structure:
+     *   inputs:   [0] this contract UTXO  (BCH + mutable NFT)
+     *   outputs:  [0] this contract again (reduced BCH + updated NFT commitment)
+     *             [1] merchant P2PKH      (exactly authorizedSats)
+     *
+     * tx.locktime MUST be set to the current block height — enforces the interval.
+     */
+    function claim(pubkey merchantPk, sig merchantSig) {
+        // ── 1. Verify merchant identity ───────────────────────────────────────
+        require(checkSig(merchantSig, merchantPk));
+        require(hash160(merchantPk) == merchantPkh);
+
+        // ── 2. Decode subscription state from this input's mutable NFT ────────
+        bytes nftData       = tx.inputs[this.activeInputIndex].nftCommitment;
+        int lastClaimBlock  = int(nftData.split(4)[0]);
+        int authorizedSats  = int(nftData.split(4)[1]);
+
+        // ── 3. Enforce interval: tx.locktime must be ≥ lastClaim + interval ───
+        require(tx.locktime >= lastClaimBlock + intervalBlocks);
+
+        // ── 4. Verify contract has enough funds for merchant payout + miner fee
+        int inputValue = tx.inputs[this.activeInputIndex].value;
+        int minerFee   = 1500;
+        require(inputValue >= authorizedSats + minerFee);
+
+        // ── 5. Build updated NFT commitment (new lastClaimBlock, same rate) ───
+        bytes newCommitment = bytes4(tx.locktime) + nftData.split(4)[1];
+
+        // ── 6. Output 0: contract self-output with updated NFT and new balance ─
+        int contractBalance = inputValue - authorizedSats - minerFee;
+        require(tx.outputs[0].lockingBytecode == tx.inputs[this.activeInputIndex].lockingBytecode);
+        require(tx.outputs[0].value           == contractBalance);
+        require(tx.outputs[0].nftCommitment   == newCommitment);
+        require(tx.outputs[0].tokenCategory   == tx.inputs[this.activeInputIndex].tokenCategory);
+
+        // ── 7. Output 1: merchant receives their authorized payment ────────────
+        require(tx.outputs[1].lockingBytecode == new LockingBytecodeP2PKH(merchantPkh));
+        require(tx.outputs[1].value           == authorizedSats);
+    }
+
+    /**
+     * cancel()
+     *
+     * The subscriber terminates the subscription and recovers remaining balance.
+     * The mutable NFT is deliberately NOT forwarded — subscription is destroyed.
+     *
+     * Required tx structure:
+     *   inputs:   [0] this contract UTXO
+     *   outputs:  [0] subscriber P2PKH  (full remaining balance minus miner fee)
+     */
+    function cancel(pubkey subscriberPk, sig subscriberSig) {
+        // ── 1. Verify subscriber identity ────────────────────────────────────
+        require(checkSig(subscriberSig, subscriberPk));
+        require(hash160(subscriberPk) == subscriberPkh);
+
+        // ── 2. Return remaining balance to subscriber ─────────────────────────
+        int inputValue = tx.inputs[this.activeInputIndex].value;
+        int minerFee   = 1500;
+
+        require(tx.outputs[0].lockingBytecode == new LockingBytecodeP2PKH(subscriberPkh));
+        require(tx.outputs[0].value           >= inputValue - minerFee);
+
+        // ── 3. Enforce NFT destruction (no token category in subscriber output)
+        require(tx.outputs[0].tokenCategory   == 0x);
+    }
+}

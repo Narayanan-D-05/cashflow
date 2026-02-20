@@ -3,8 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx src/server/index.ts",
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "compile-contracts": "cashc contracts/AutoPaySubscription.cash -o src/contracts/AutoPaySubscription.json"
   },
   "repository": {
     "type": "git",
@@ -20,23 +25,26 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@bitauth/libauth": "^3.1.0-next.8",
     "@electrum-cash/network": "^4.2.2",
-    "@types/jest": "^30.0.0",
     "axios": "^1.13.5",
     "cashscript": "^0.12.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "jest": "^30.2.0",
     "jsonwebtoken": "^9.0.3",
-    "ts-jest": "^29.4.6",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"
   }
