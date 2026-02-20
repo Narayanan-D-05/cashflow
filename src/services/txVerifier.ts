@@ -74,10 +74,14 @@ export async function verifyPerCallPayment(opts: {
   }
 
   // Scan all outputs for a matching payment to the merchant
+  console.log('[txVerifier] tx.vout sample:', JSON.stringify(tx.vout?.[0]));
+  console.log('[txVerifier] expectedLockBytecode:', expectedLockBytecode);
   for (const out of tx.vout) {
-    if (out.scriptpubkey === expectedLockBytecode) {
-      // Electrum verbose tx returns output values in BCH (float)
-      const receivedSats = Math.round(out.value * 100_000_000);
+    // Fulcrum returns scriptPubKey.hex; some servers return flat scriptpubkey
+    const outScript = out.scriptPubKey?.hex ?? out.scriptpubkey ?? '';
+    if (outScript === expectedLockBytecode) {
+      // Use Number() to safely coerce LosslessNumber from lossless-json
+      const receivedSats = Math.round(Number(out.value) * 100_000_000);
       if (receivedSats >= requiredSats) {
         return { verified: true, amountSats: receivedSats };
       } else {

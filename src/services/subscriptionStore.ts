@@ -213,3 +213,17 @@ export function consumeNonce(nonce: string): NonceRecord | null {
   rec.consumed = true;
   return rec;
 }
+
+// ─── Spent txid store (replay-attack prevention) ──────────────────────────────
+// Keeps txids that have already been used to redeem a payment token.
+// In-memory only; survives for the process lifetime.
+
+const spentTxids: Set<string> = new Set();
+
+export function isTxidSpent(txid: string): boolean {
+  return spentTxids.has(txid);
+}
+
+export function markTxidSpent(txid: string): void {
+  spentTxids.add(txid);
+}

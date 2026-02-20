@@ -23,7 +23,14 @@ export interface ElectrumTxOutput {
 export interface ElectrumRawTx {
   txid: string;
   hex: string;
-  vout: Array<{ value: number; scriptpubkey: string; n: number }>;
+  vout: Array<{
+    value: number;          // BCH float (e.g. 0.00000546)
+    n: number;
+    // Fulcrum/ElectrumX returns scriptPubKey as an object
+    scriptPubKey?: { hex: string; asm?: string; type?: string };
+    // Some servers use flat lowercase field
+    scriptpubkey?: string;
+  }>;
   confirmations?: number;
   blockhash?: string;
   blocktime?: number;

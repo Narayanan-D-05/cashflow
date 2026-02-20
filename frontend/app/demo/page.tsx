@@ -312,8 +312,13 @@ export default function DemoPage() {
                 <input
                   type="text"
                   value={txidInput}
-                  onChange={e => setTxidInput(e.target.value)}
-                  placeholder="Paste your on-chain txid hereâ€¦"
+                  onChange={e => {
+                    const val = e.target.value.trim();
+                    // Auto-extract txid if user pastes a block explorer URL
+                    const match = val.match(/\b([0-9a-fA-F]{64})\b/);
+                    setTxidInput(match ? match[1] : val);
+                  }}
+                  placeholder="Paste your on-chain txid here…"
                   className="w-full bg-[var(--color-surface-alt)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-[var(--color-brand)] transition-colors placeholder:text-[var(--color-text-faint)]"
                 />
               </div>

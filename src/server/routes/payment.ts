@@ -19,6 +19,8 @@ import { buildPerCallUri } from '../../utils/bip21.js';
 import {
   consumeNonce,
   storeNonce,
+  isTxidSpent,
+  markTxidSpent,
 } from '../../services/subscriptionStore.js';
 import type { VerifyPaymentBody, VerifyPaymentResponse } from '../../types.js';
 
@@ -49,6 +51,15 @@ paymentRouter.post('/verify-payment', async (req: Request, res: Response): Promi
     return;
   }
 
+  // Reject already-spent txids (replay attack prevention)
+  if (isTxidSpent(txid)) {
+    res.status(402).json({
+      error:  'Payment verification failed.',
+      detail: 'This transaction has already been used to obtain an access token.',
+    });
+    return;
+  }
+
   // Look up and consume the nonce (single-use)
   const nonceRecord = consumeNonce(nonce);
   if (!nonceRecord) {
@@ -73,6 +84,9 @@ paymentRouter.post('/verify-payment', async (req: Request, res: Response): Promi
     });
     return;
   }
+
+  // Mark txid as spent so it can't be reused
+  markTxidSpent(txid);
 
   // Issue JWT
   const expiresInSeconds = parseInt(process.env['JWT_EXPIRY_PERCALL'] ?? '60', 10);
@@ -109,7 +123,7 @@ paymentRouter.get('/payment/challenge', (req: Request, res: Response): void => {
     : parseInt(process.env['DEFAULT_PERCALL_RATE_SATS'] ?? '546', 10);
 
   const nonce      = uuidv4();
-  const expiresAt  = Date.now() + 120_000;
+  const expiresAt  = Date.now() + 600_000; // 10 minutes
 
   storeNonce(nonce, {
     merchantAddress,
