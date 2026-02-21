@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import CursorGlow from "@/components/cursor-glow";
@@ -184,12 +184,28 @@ export default function SubscriptionPage() {
     // API call counter (for Step 4 repeat calls)
     const [callCount, setCallCount] = useState(0);
 
+    // On mount, load session from localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem("cashflow402_demo_session");
+        if (saved) {
+            try {
+                setSession(JSON.parse(saved));
+                setS1("done");
+            } catch (e) {
+                console.error("Failed to parse saved session", e);
+            }
+        }
+    }, []);
+
     function err(msg: string) {
         setErrorMsg(msg);
     }
 
     // ── Step 1: POST /subscription/create-session ──────────────────────────────
     const runStep1 = useCallback(async () => {
+        // If we already have a session in state (loaded from localstorage), don't overwrite it unless explicitly clearing.
+        if (session) return;
+
         setS1("running");
         setSession(null);
         setFundData(null);
@@ -202,12 +218,24 @@ export default function SubscriptionPage() {
         try {
             const data = await api.createSession();
             setSession(data);
+            localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
             setS1("done");
             setS2("idle"); // Step 2 is passive — just fund the address
         } catch (e) {
             setS1("error");
             err(String(e));
         }
+    }, [session]);
+
+    const clearSession = useCallback(() => {
+        localStorage.removeItem("cashflow402_demo_session");
+        setSession(null);
+        setFundData(null);
+        setApiData(null);
+        setClaimData(null);
+        setS1("idle"); setS2("idle"); setS3("idle"); setS4("idle"); setS5("idle");
+        setCallCount(0);
+        setErrorMsg(null);
     }, []);
 
     // ── Step 3: POST /subscription/auto-fund ──────────────────────────────────
@@ -307,18 +335,32 @@ export default function SubscriptionPage() {
                     <div className="flex flex-col gap-4 animate-fade-in-up delay-100">
 
                         {/* ── STEP 1 ───────────────────────────────────────────────────── */}
-                        <StepCard number={1} title="Create Session" subtitle="POST /subscription/create-session — server generates subscriber keypair + deploys covenant" status={s1} icon={Key}>
-                            <button
-                                onClick={runStep1}
-                                disabled={s1 === "running"}
-                                className="flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold
-                           bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)]
-                           hover:bg-[var(--color-brand-light)] disabled:opacity-40
-                           transition-all duration-200 glow-sm hover:glow-md mb-4"
-                            >
-                                {s1 === "running" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                                {s1 === "done" ? "Restart Flow" : "Create Session"}
-                            </button>
+                        <StepCard number={1} title="Create Session (Local Wallet)" subtitle="POST /subscription/create-session — generates subscriber keypair + deploys covenant" status={s1} icon={Key}>
+                            {!session ? (
+                                <button
+                                    onClick={runStep1}
+                                    disabled={s1 === "running"}
+                                    className="flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold
+                               bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)]
+                               hover:bg-[var(--color-brand-light)] disabled:opacity-40
+                               transition-all duration-200 glow-sm hover:glow-md mb-4"
+                                >
+                                    {s1 === "running" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                                    Create Session
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="text-xs font-semibold text-[var(--color-success)] bg-[var(--color-success)]/10 px-3 py-1.5 rounded-lg border border-[var(--color-success)]/20">
+                                        Wallet Restored from Browser
+                                    </span>
+                                    <button
+                                        onClick={clearSession}
+                                        className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-error)] underline transition-colors"
+                                    >
+                                        Clear Wallet & Start Over
+                                    </button>
+                                </div>
+                            )}
 
                             {session && (
                                 <div className="flex flex-col gap-3 animate-fade-in">
@@ -360,14 +402,24 @@ export default function SubscriptionPage() {
                                             Get free ChipNet tBCH below, then click Auto-Fund.
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 flex-wrap">
+                                    <div className="flex gap-2 flex-wrap items-center">
+                                        <a
+                                            href={`${session.subscriberAddress}?amount=${(session.depositSats + 5000) / 100000000}`}
+                                            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
+                                               bg-[#00c58e] text-black shadow-[0_0_15px_rgba(0,197,142,0.3)]
+                                               hover:bg-[#00db9d] hover:shadow-[0_0_20px_rgba(0,197,142,0.5)] transition-all shrink-0"
+                                        >
+                                            <Wallet className="w-3.5 h-3.5" />
+                                            Pay with Paytaca
+                                        </a>
+                                        <span className="text-[10px] uppercase text-[var(--color-text-muted)] mx-1">OR</span>
                                         <a
                                             href="https://tbch.googol.cash"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
                                  border border-[var(--color-brand)]/40 text-[var(--color-brand)]
-                                 hover:bg-[var(--color-brand)]/10 transition-all"
+                                 hover:bg-[var(--color-brand)]/10 transition-all shrink-0"
                                         >
                                             <ExternalLink className="w-3.5 h-3.5" />
                                             tbch.googol.cash faucet
@@ -559,12 +611,12 @@ export default function SubscriptionPage() {
                                 <span className="text-[var(--color-text)]">covenant deployed → funded on-chain → API called with per-call deduction → merchant claimed BCH.</span>
                             </p>
                             <button
-                                onClick={runStep1}
+                                onClick={clearSession}
                                 className="mt-4 flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold
                            border border-[var(--color-border)] text-[var(--color-text-muted)]
                            hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)] transition-all"
                             >
-                                <RefreshCw className="w-4 h-4" /> Run Again
+                                <RefreshCw className="w-4 h-4" /> Start Over
                             </button>
                         </div>
                     )}
