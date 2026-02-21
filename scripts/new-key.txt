@@ -1,0 +1,2 @@
+﻿MERCHANT_WIF=cPWEtAdKVCSNiAvpqWXwqFbJCnPE3xWQbFsu3qcAMXYotVSowHJQ
+MERCHANT_ADDRESS=bchtest:qr5a6yya7wez6g77q07rwnu4twuzc7hpvy4d6wwzsk

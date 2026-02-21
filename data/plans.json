@@ -83,5 +83,509 @@
     "subscriberCount": 0,
     "createdAt": "2026-02-21T08:17:46.962Z",
     "updatedAt": "2026-02-21T08:17:46.962Z"
+  },
+  {
+    "planId": "fd2bf60e-e45e-4e5b-9589-40cfb7b013d9",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:19.113Z",
+    "updatedAt": "2026-02-21T08:32:19.113Z"
+  },
+  {
+    "planId": "2c30df0c-8e87-4355-aabf-2eb2858ff434",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:19.142Z",
+    "updatedAt": "2026-02-21T08:32:19.142Z"
+  },
+  {
+    "planId": "975b5dc3-bc2f-41d8-ab4f-2755db9c71d8",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:19.175Z",
+    "updatedAt": "2026-02-21T08:32:19.195Z"
+  },
+  {
+    "planId": "98c9946c-31cd-45ee-8b49-932a8adcf22c",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:19.224Z",
+    "updatedAt": "2026-02-21T08:32:19.235Z"
+  },
+  {
+    "planId": "4f559e41-af6b-409a-83ba-a3754c46a3fc",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 1,
+    "createdAt": "2026-02-21T08:32:19.256Z",
+    "updatedAt": "2026-02-21T08:32:21.071Z"
+  },
+  {
+    "planId": "dac20d3e-7540-42d8-8852-4a3b6206a440",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:44.722Z",
+    "updatedAt": "2026-02-21T08:32:44.722Z"
+  },
+  {
+    "planId": "34b89d27-f13a-409c-a992-d8505b9f20a6",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:44.750Z",
+    "updatedAt": "2026-02-21T08:32:44.750Z"
+  },
+  {
+    "planId": "c267d16f-9b30-4b93-a802-40da15d9cd6c",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:44.782Z",
+    "updatedAt": "2026-02-21T08:32:44.796Z"
+  },
+  {
+    "planId": "42e60499-115b-45ad-84c6-27a10795f4e6",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:32:44.822Z",
+    "updatedAt": "2026-02-21T08:32:44.833Z"
+  },
+  {
+    "planId": "55cd64a5-adc8-4eba-a369-1b8e67248445",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 1,
+    "createdAt": "2026-02-21T08:32:44.857Z",
+    "updatedAt": "2026-02-21T08:32:46.573Z"
+  },
+  {
+    "planId": "935e4d82-ebba-4d0b-868d-28f7a90b3079",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:35:04.078Z",
+    "updatedAt": "2026-02-21T08:35:04.078Z"
+  },
+  {
+    "planId": "15400bf8-0695-466d-93e5-2674abba826c",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:35:04.107Z",
+    "updatedAt": "2026-02-21T08:35:04.107Z"
+  },
+  {
+    "planId": "e0217b45-79fd-485d-9731-47f284f31fb2",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:35:04.143Z",
+    "updatedAt": "2026-02-21T08:35:04.164Z"
+  },
+  {
+    "planId": "aa14ebc6-ce93-41a7-879c-dfe85b050926",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:35:04.191Z",
+    "updatedAt": "2026-02-21T08:35:04.199Z"
+  },
+  {
+    "planId": "b1c3adb7-a7eb-47a5-a550-f12afaf5063f",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 1,
+    "createdAt": "2026-02-21T08:35:04.219Z",
+    "updatedAt": "2026-02-21T08:35:05.753Z"
+  },
+  {
+    "planId": "2d4d28df-aec3-41a5-8fda-9f5f910eaff4",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:37:38.397Z",
+    "updatedAt": "2026-02-21T08:37:38.397Z"
+  },
+  {
+    "planId": "dfd127e7-0dc3-4ca0-9194-8644a5d268e8",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:37:38.451Z",
+    "updatedAt": "2026-02-21T08:37:38.451Z"
+  },
+  {
+    "planId": "1992c0e5-2aed-4600-b34d-9ea5b37f71b9",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:37:38.495Z",
+    "updatedAt": "2026-02-21T08:37:38.513Z"
+  },
+  {
+    "planId": "734c72a0-dcbb-4bc5-b0c9-115e129e02cf",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:37:38.547Z",
+    "updatedAt": "2026-02-21T08:37:38.560Z"
+  },
+  {
+    "planId": "6f29d6b7-dc12-43f3-a4a6-7ab30ebfe111",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 1,
+    "createdAt": "2026-02-21T08:37:38.586Z",
+    "updatedAt": "2026-02-21T08:37:40.200Z"
+  },
+  {
+    "planId": "d5293125-8406-4e2d-946d-fd20c453902c",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:38:20.758Z",
+    "updatedAt": "2026-02-21T08:38:20.758Z"
+  },
+  {
+    "planId": "d75f1abb-fd48-4cd1-a578-0ef058eb9f83",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:38:20.776Z",
+    "updatedAt": "2026-02-21T08:38:20.776Z"
+  },
+  {
+    "planId": "b6a86f24-6fb2-4e81-b99d-c8888134a551",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:38:20.803Z",
+    "updatedAt": "2026-02-21T08:38:20.812Z"
+  },
+  {
+    "planId": "12f5b871-b3c3-4d15-9639-3ad1bf7168cb",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:38:20.828Z",
+    "updatedAt": "2026-02-21T08:38:20.835Z"
+  },
+  {
+    "planId": "928a8277-3069-4b9f-b193-4ab0aec996fe",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 1,
+    "createdAt": "2026-02-21T08:38:20.849Z",
+    "updatedAt": "2026-02-21T08:38:22.132Z"
+  },
+  {
+    "planId": "e40bbdbd-cdf9-43f7-ad32-409232230aac",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:17.235Z",
+    "updatedAt": "2026-02-21T08:41:17.235Z"
+  },
+  {
+    "planId": "4589bcde-4173-4a6c-8c0e-7c7d9af1ac4e",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:17.253Z",
+    "updatedAt": "2026-02-21T08:41:17.253Z"
+  },
+  {
+    "planId": "853cd05c-4091-4d47-a433-641e77c14b1f",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:17.272Z",
+    "updatedAt": "2026-02-21T08:41:17.278Z"
+  },
+  {
+    "planId": "d5b07ae8-e2af-437e-9da4-6be4f593da13",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:17.294Z",
+    "updatedAt": "2026-02-21T08:41:17.300Z"
+  },
+  {
+    "planId": "41ddcb09-51c5-47e6-916a-b818f7559bda",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:51.545Z",
+    "updatedAt": "2026-02-21T08:41:51.545Z"
+  },
+  {
+    "planId": "618d31b5-91d3-4298-8d6d-f746a7d72aa8",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:51.564Z",
+    "updatedAt": "2026-02-21T08:41:51.564Z"
+  },
+  {
+    "planId": "63317790-a0ff-45cf-8f1a-4dce001b2bba",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:51.586Z",
+    "updatedAt": "2026-02-21T08:41:51.593Z"
+  },
+  {
+    "planId": "979cf333-a0e4-42e2-bf7d-f743da18fe74",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:41:51.610Z",
+    "updatedAt": "2026-02-21T08:41:51.616Z"
+  },
+  {
+    "planId": "682f8b3c-2e08-4309-9671-bf53c50e494a",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:45:06.269Z",
+    "updatedAt": "2026-02-21T08:45:06.269Z"
+  },
+  {
+    "planId": "30586abe-7b89-4c4c-a0d1-98352fb804fa",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:45:06.294Z",
+    "updatedAt": "2026-02-21T08:45:06.294Z"
+  },
+  {
+    "planId": "bdda5480-c826-4c84-96d5-224020d9f5c9",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:45:06.313Z",
+    "updatedAt": "2026-02-21T08:45:06.320Z"
+  },
+  {
+    "planId": "5d745ebe-f2a5-4cb8-839c-d5331d725cc7",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:45:06.335Z",
+    "updatedAt": "2026-02-21T08:45:06.339Z"
   }
 ]
