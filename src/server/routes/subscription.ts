@@ -45,8 +45,9 @@ import { verifySubscriptionFunding } from '../../services/txVerifier.js';
 import { subscribeToAddress } from '../../services/electrumService.js';
 import { signSubscriptionToken } from '../../utils/jwt.js';
 import { buildSubscriptionFundingUri } from '../../utils/bip21.js';
-import { addressToPkh, toHex, wifToKeyPair } from '../../utils/crypto.js';
+import { addressToPkh, toHex, wifToKeyPair, generateKeyPair } from '../../utils/crypto.js';
 import { getBlockHeight } from '../../services/electrumService.js';
+import { buildAndBroadcastGenesisFundingTx } from '../../utils/buildFundingTx.js';
 import type {
   DeploySubscriptionBody,
   DeploySubscriptionResponse,
@@ -422,5 +423,176 @@ subscriptionRouter.get('/subscription/verify', (req: Request, res: Response): vo
     accessToken,
     expiresInSeconds: parseInt(process.env['JWT_EXPIRY_SUBSCRIPTION'] ?? '3600', 10),
     tokenCategory,
+  });
+});
+
+// ─── POST /subscription/create-session ───────────────────────────────────────
+
+/**
+ * Demo-friendly: generate a fresh subscriber keypair + deploy a subscription.
+ * Returns the subscriber address to fund, plus full contract details.
+ * The subscriber WIF is returned so /subscription/auto-fund can use it.
+ *
+ * ⚠️  Returning a WIF to the client is demo-only. In production,
+ *     the subscriber builds + signs the funding tx client-side.
+ */
+subscriptionRouter.post('/subscription/create-session', async (req: Request, res: Response): Promise<void> => {
+  const merchantWif = process.env['MERCHANT_WIF'];
+  if (!merchantWif) {
+    res.status(500).json({ error: 'MERCHANT_WIF not configured.' });
+    return;
+  }
+
+  const network        = (process.env['BCH_NETWORK'] ?? 'chipnet') as 'chipnet' | 'mainnet';
+  const intervalBlocks = parseInt(process.env['DEFAULT_INTERVAL_BLOCKS'] ?? '5', 10); // short for demo
+  const authorizedSats = parseInt(process.env['DEFAULT_AUTHORIZED_SATS'] ?? '10000', 10);
+
+  // Generate subscriber keypair
+  const subscriberKp     = generateKeyPair(network);
+  const subscriberAddress = subscriberKp.address;
+  const subscriberWif     = subscriberKp.wif;
+
+  // Derive merchant PKH
+  let merchantPkhHex: string;
+  let merchantAddress: string;
+  try {
+    const kp = wifToKeyPair(merchantWif, network);
+    merchantPkhHex  = toHex(kp.pkh);
+    merchantAddress = kp.address;
+  } catch (e) {
+    res.status(500).json({ error: `Merchant key error: ${String(e)}` });
+    return;
+  }
+
+  const subscriberPkhHex = toHex(addressToPkh(subscriberAddress));
+
+  // Instantiate contract (deterministic, no broadcast)
+  const deployed = instantiateSubscriptionContract({ merchantPkhHex, subscriberPkhHex, intervalBlocks });
+
+  const currentBlock      = await getBlockHeight();
+  const genesisCommitment = buildGenesisCommitment(currentBlock, authorizedSats);
+  const depositSats       = authorizedSats * 4; // 4 intervals pre-funded
+
+  const placeholderCategory = `pending_${deployed.contractAddress.slice(-12)}`;
+  const now = new Date().toISOString();
+
+  addSubscription({
+    contractAddress:   deployed.contractAddress,
+    tokenCategory:     placeholderCategory,
+    merchantPkh:       merchantPkhHex,
+    subscriberPkh:     subscriberPkhHex,
+    subscriberAddress,
+    merchantAddress,
+    intervalBlocks,
+    authorizedSats:    BigInt(authorizedSats),
+    lastClaimBlock:    currentBlock,
+    balance:           0n,
+    status:            'pending_funding',
+    createdAt:         now,
+    updatedAt:         now,
+  });
+
+  res.status(201).json({
+    subscriberAddress,
+    subscriberWif,           // ⚠️ demo only
+    contractAddress:  deployed.contractAddress,
+    tokenAddress:     deployed.tokenAddress,
+    genesisCommitment,
+    depositSats,
+    authorizedSats,
+    intervalBlocks,
+    startBlock:       currentBlock,
+    hint: `Fund ${subscriberAddress} with at least ${depositSats + 5000} sats from https://tbch.googol.cash, then call POST /subscription/auto-fund`,
+  });
+});
+
+// ─── POST /subscription/auto-fund ────────────────────────────────────────────
+
+/**
+ * Build + broadcast the genesis funding transaction server-side.
+ * Requires the subscriber's WIF (from /subscription/create-session).
+ * After broadcast, activates the subscription automatically.
+ *
+ * Body: { contractAddress, subscriberWif }
+ */
+subscriptionRouter.post('/subscription/auto-fund', async (req: Request, res: Response): Promise<void> => {
+  const { contractAddress, subscriberWif } = req.body as {
+    contractAddress: string;
+    subscriberWif: string;
+  };
+
+  if (!contractAddress || !subscriberWif) {
+    res.status(400).json({ error: 'Body must include { contractAddress, subscriberWif }.' });
+    return;
+  }
+
+  const record = getByAddress(contractAddress);
+  if (!record) {
+    res.status(404).json({ error: `No subscription found for contractAddress: ${contractAddress}` });
+    return;
+  }
+
+  if (record.status === 'active') {
+    res.status(200).json({ message: 'Subscription already active.', contractAddress });
+    return;
+  }
+
+  const network = (process.env['BCH_NETWORK'] ?? 'chipnet') as 'chipnet' | 'mainnet';
+  let subscriberKp: ReturnType<typeof wifToKeyPair>;
+  try {
+    subscriberKp = wifToKeyPair(subscriberWif, network);
+  } catch (e) {
+    res.status(400).json({ error: `Invalid subscriberWif: ${String(e)}` });
+    return;
+  }
+
+  // Re-instantiate contract to get tokenAddress
+  const deployed = instantiateSubscriptionContract({
+    merchantPkhHex:   record.merchantPkh,
+    subscriberPkhHex: record.subscriberPkh,
+    intervalBlocks:   record.intervalBlocks,
+  });
+
+  const currentBlock      = await getBlockHeight();
+  const genesisCommitment = buildGenesisCommitment(currentBlock, Number(record.authorizedSats));
+  const depositSats       = record.authorizedSats * 4n;
+
+  const provider = getProvider();
+
+  let txid: string;
+  let tokenCategory: string;
+  try {
+    ({ txid, tokenCategory } = await buildAndBroadcastGenesisFundingTx({
+      subscriberPrivKey:    subscriberKp.privateKey,
+      subscriberPubKey:     subscriberKp.publicKey,
+      subscriberPkh:        Buffer.from(subscriberKp.pkh),
+      subscriberAddress:    subscriberKp.address,
+      contractTokenAddress: deployed.tokenAddress,
+      genesisCommitment,
+      depositSats,
+      provider,
+    }));
+  } catch (e) {
+    res.status(500).json({ error: `Failed to build/broadcast funding tx: ${String(e)}` });
+    return;
+  }
+
+  // Activate the subscription
+  updateSubscription(contractAddress, {
+    tokenCategory,
+    balance: depositSats,
+    status:  'active',
+  });
+
+  console.log(`[Subscription] Auto-funded ${contractAddress.slice(0, 16)}… txid: ${txid}`);
+
+  res.status(200).json({
+    message:         'Subscription funded and activated.',
+    txid,
+    tokenCategory,
+    contractAddress,
+    depositSats:     depositSats.toString(),
+    authorizedSats:  record.authorizedSats.toString(),
+    intervalBlocks:  record.intervalBlocks,
   });
 });

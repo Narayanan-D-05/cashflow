@@ -134,6 +134,60 @@ export const api = {
     return post<{ txid: string }>("/subscription/cancel", { contractAddress });
   },
 
+  // ─── Subscription covenant flow ────────────────────────────────────────────
+
+  /**
+   * Server generates a fresh subscriber keypair + deploys the on-chain covenant.
+   * Returns address to fund + subscriber WIF so auto-fund can sign the genesis tx.
+   * POST /subscription/create-session
+   */
+  createSession(): Promise<{
+    subscriberAddress:  string;
+    subscriberWif:      string;
+    contractAddress:    string;
+    tokenAddress:       string;
+    genesisCommitment:  string;
+    depositSats:        number;
+    authorizedSats:     number;
+    intervalBlocks:     number;
+    startBlock:         number;
+    hint:               string;
+  }> {
+    return post(/* path */ "/subscription/create-session", {});
+  },
+
+  /**
+   * Build + broadcast the genesis funding tx server-side, then activate.
+   * POST /subscription/auto-fund
+   */
+  autoFund(params: { contractAddress: string; subscriberWif: string }): Promise<{
+    message:        string;
+    txid:           string;
+    tokenCategory:  string;
+    contractAddress: string;
+    depositSats:    string;
+    authorizedSats: string;
+    intervalBlocks: number;
+  }> {
+    return post("/subscription/auto-fund", params);
+  },
+
+  /**
+   * Verify subscription token and get an access JWT.
+   * GET /subscription/verify?tokenCategory=…
+   */
+  verifySubscription(tokenCategory: string): Promise<{ accessToken: string; expiresInSeconds: number }> {
+    return get(`/subscription/verify?tokenCategory=${encodeURIComponent(tokenCategory)}`);
+  },
+
+  /**
+   * Call the subscription-gated premium endpoint.
+   * GET /api/premium/hello  Authorization: Bearer <token>
+   */
+  premiumHello(token: string): Promise<{ message: string }> {
+    return get("/api/premium/hello", { Authorization: `Bearer ${token}` });
+  },
+
   // ─── Raw fetch utilities for demo page ───────────────────────────────────
 
   raw(method: string, path: string): Promise<Response> {

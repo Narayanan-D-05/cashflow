@@ -6,9 +6,10 @@ import { useState, useEffect } from "react";
 import { Zap, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/",          label: "Home"      },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/demo",      label: "Demo"      },
+  { href: "/",              label: "Home"         },
+  { href: "/dashboard",     label: "Dashboard"    },
+  { href: "/demo",          label: "Per-call Demo" },
+  { href: "/subscription",  label: "Subscription" },
   { href: "http://localhost:3000/docs", label: "API Docs", external: true },
 ];
 
