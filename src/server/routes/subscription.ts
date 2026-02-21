@@ -478,7 +478,7 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
 
   const network = (process.env['BCH_NETWORK'] ?? 'chipnet') as 'chipnet' | 'mainnet';
   const intervalBlocks = parseInt(process.env['DEFAULT_INTERVAL_BLOCKS'] ?? '1', 10); // 1 block for fast demo claim testing
-  const authorizedSats = parseInt(process.env['DEFAULT_AUTHORIZED_SATS'] ?? '10000', 10);
+  const authorizedSats = parseInt(process.env['DEFAULT_AUTHORIZED_SATS'] ?? '1000', 10);
 
   // Generate subscriber keypair
   const subscriberKp = generateKeyPair(network);
