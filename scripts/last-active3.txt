@@ -1,0 +1,15 @@
+{
+  "contractAddress": "bchtest:p08h7yheu2npgmstc9mjkdxj5undav0xs0x4mk7lf09h8kzjw8pw2akuqd5g6",
+  "tokenCategory": "50455224ca7b7a6f873d74d1eaf4add7cc76314201e31a3e9e50b60775e40e52",
+  "merchantPkh": "e9dd109df3b22d23de03fc374f955bb82c7ae161",
+  "subscriberPkh": "9236bed98044d398e221221f89ebdfe4e1f3de8f",
+  "subscriberAddress": "bchtest:qzfrd0kespzd8x8zyy3plz0tmljwru773uhn5tc72u",
+  "merchantAddress": "bchtest:qr5a6yya7wez6g77q07rwnu4twuzc7hpvy4d6wwzsk",
+  "intervalBlocks": 1,
+  "authorizedSats": "50000",
+  "lastClaimBlock": 293891,
+  "balance": "200000",
+  "status": "active",
+  "createdAt": "2026-02-21T11:25:11.131Z",
+  "updatedAt": "2026-02-21T11:25:59.337Z"
+}
