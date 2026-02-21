@@ -6,17 +6,18 @@ import { useState, useEffect } from "react";
 import { Zap, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/",              label: "Home"         },
-  { href: "/dashboard",     label: "Dashboard"    },
-  { href: "/demo",          label: "Per-call Demo" },
-  { href: "/subscription",  label: "Subscription" },
+  { href: "/", label: "Home" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/demo", label: "Per-call Demo" },
+  { href: "/subscription", label: "Subscription" },
+  { href: "/merchant", label: "Merchant Guide" },
   { href: "http://localhost:3000/docs", label: "API Docs", external: true },
 ];
 
 export default function Header() {
   const pathname = usePathname();
-  const [scrolled, setScrolled]     = useState(false);
-  const [menuOpen, setMenuOpen]     = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -26,11 +27,10 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled || menuOpen
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled || menuOpen
           ? "glass border-b border-[var(--color-border)]"
           : "bg-transparent"
-      }`}
+        }`}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 
@@ -62,11 +62,10 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-all duration-200 ${
-                  active
+                className={`px-3 py-1.5 rounded-lg text-sm transition-all duration-200 ${active
                     ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -104,11 +103,10 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className={`px-3 py-2 rounded-lg text-sm transition-all ${
-                  pathname === link.href
+                className={`px-3 py-2 rounded-lg text-sm transition-all ${pathname === link.href
                     ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
                     : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
