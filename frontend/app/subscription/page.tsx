@@ -185,19 +185,59 @@ export default function SubscriptionPage() {
     const [callCount, setCallCount] = useState(0);
     const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
 
-    // On mount, load session from localStorage
+    // On mount: if coming from merchant redirect (callbackUrl present),
+    // always clear stale localStorage and auto-create a fresh session.
+    // Otherwise, restore saved session but validate it against the backend first.
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const urlParams = new URLSearchParams(window.location.search);
-            setCallbackUrl(urlParams.get("callbackUrl"));
-        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const cb = urlParams.get("callbackUrl");
+        setCallbackUrl(cb);
+
         const saved = localStorage.getItem("cashflow402_demo_session");
+
+        if (cb) {
+            // Coming from merchant redirect — always start fresh
+            localStorage.removeItem("cashflow402_demo_session");
+            // Auto-create new session after short delay so UI renders first
+            setTimeout(() => {
+                void (async () => {
+                    setS1("running");
+                    try {
+                        const data = await api.createSession();
+                        setSession(data);
+                        localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
+                        setS1("done");
+                    } catch (e) {
+                        setS1("error");
+                        setErrorMsg(String(e));
+                    }
+                })();
+            }, 300);
+            return;
+        }
+
         if (saved) {
             try {
-                setSession(JSON.parse(saved));
-                setS1("done");
+                const parsed = JSON.parse(saved);
+                // Validate session against backend before restoring
+                fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/subscription/status/${encodeURIComponent(parsed.contractAddress)}`)
+                    .then(r => {
+                        if (r.ok) {
+                            setSession(parsed);
+                            setS1("done");
+                        } else {
+                            // Backend doesn't know this contract — stale session, clear it
+                            localStorage.removeItem("cashflow402_demo_session");
+                        }
+                    })
+                    .catch(() => {
+                        // Network error — restore optimistically
+                        setSession(parsed);
+                        setS1("done");
+                    });
             } catch (e) {
                 console.error("Failed to parse saved session", e);
+                localStorage.removeItem("cashflow402_demo_session");
             }
         }
     }, []);
@@ -208,11 +248,10 @@ export default function SubscriptionPage() {
 
     // ── Step 1: POST /subscription/create-session ──────────────────────────────
     const runStep1 = useCallback(async () => {
-        // If we already have a session in state (loaded from localstorage), don't overwrite it unless explicitly clearing.
+        // Already have a valid session — don't overwrite unless user clears first
         if (session) return;
 
         setS1("running");
-        setSession(null);
         setFundData(null);
         setApiData(null);
         setClaimData(null);
@@ -225,7 +264,6 @@ export default function SubscriptionPage() {
             setSession(data);
             localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
             setS1("done");
-            setS2("idle"); // Step 2 is passive — just fund the address
         } catch (e) {
             setS1("error");
             err(String(e));

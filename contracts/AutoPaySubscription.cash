@@ -1,82 +1,97 @@
 pragma cashscript ^0.12.0;
 
 /**
- * AutoPaySubscription
+ * AutoPaySubscription — Metered Billing Edition
  *
- * A non-custodial recurring pull-payment covenant on BCH using CashTokens (mutable NFT).
+ * A non-custodial metered-billing covenant on BCH using CashTokens (mutable NFT).
  *
  * The contract UTXO holds:
- *   - BCH balance    — subscription credits deposited by the subscriber
- *   - Mutable NFT    — on-chain subscription state (lastClaimBlock + authorizedSats)
+ *   - BCH balance    — credits deposited by the subscriber
+ *   - Mutable NFT    — on-chain state tracking total sats consumed
  *
  * ── NFT commitment layout (8 bytes) ──────────────────────────────────────────
- *   bytes [0..3]  lastClaimBlock  (int32 little-endian) — block height of last merchant claim
- *   bytes [4..7]  authorizedSats  (int32 little-endian) — max sats merchant may claim per interval
+ *   bytes [0..3]  lastClaimBlock  (int32 little-endian) — block of last merchant claim
+ *   bytes [4..7]  totalConsumed   (int32 little-endian) — cumulative sats consumed by API calls
+ *                                                          (updated each claim, never decreases)
  *
  * ── Constructor parameters (baked into script bytecode, immutable) ────────────
  *   merchantPkh     — merchant's P2PKH hash (20 bytes)
  *   subscriberPkh   — subscriber's P2PKH hash (20 bytes)
- *   intervalBlocks  — BCH blocks between allowed claims (e.g. 144 ≈ 1 day)
+ *   intervalBlocks  — minimum BCH blocks between claims (e.g. 1 = can claim each block)
+ *   maxSats         — ceiling cap: merchant can never claim more than maxSats total ever
+ *                     (safety parameter; set to total deposit for uncapped metered billing)
  *
  * ── Spending paths ─────────────────────────────────────────────────────────────
- *   claim()   — merchant pulls one interval's authorized payment
- *   cancel()  — subscriber terminates subscription and recovers remaining balance
+ *   claim(pendingSats) — merchant claims exactly what users consumed since last claim
+ *   cancel()           — subscriber terminates and recovers full remaining balance
  */
 contract AutoPaySubscription(
     bytes20 merchantPkh,
     bytes20 subscriberPkh,
-    int intervalBlocks
+    int     intervalBlocks,
+    int     maxSats
 ) {
     /**
-     * claim()
+     * claim(pendingSats)
      *
-     * The merchant calls this once per interval to withdraw their authorized payment.
+     * Merchant claims exactly the amount consumed by API calls since the last claim.
+     * `pendingSats` is provided by the trusted CashFlow402 backend from usageMeter.
+     *
+     * The NFT commitment is updated to record the new cumulative total consumed.
      *
      * Required tx structure:
      *   inputs:   [0] this contract UTXO  (BCH + mutable NFT)
      *   outputs:  [0] this contract again (reduced BCH + updated NFT commitment)
-     *             [1] merchant P2PKH      (exactly authorizedSats)
+     *             [1] merchant P2PKH      (exactly pendingSats)
      *
-     * tx.locktime MUST be set to the current block height — enforces the interval.
+     * tx.locktime MUST be set to current block height — enforces the interval.
      */
-    function claim(pubkey merchantPk, sig merchantSig) {
+    function claim(pubkey merchantPk, sig merchantSig, int pendingSats) {
         // ── 1. Verify merchant identity ───────────────────────────────────────
         require(checkSig(merchantSig, merchantPk));
         require(hash160(merchantPk) == merchantPkh);
 
-        // ── 2. Decode subscription state from this input's mutable NFT ────────
-        bytes nftData       = tx.inputs[this.activeInputIndex].nftCommitment;
-        int lastClaimBlock  = int(nftData.split(4)[0]);
-        int authorizedSats  = int(nftData.split(4)[1]);
+        // ── 2. Enforce minimum interval ───────────────────────────────────────
+        bytes nftData      = tx.inputs[this.activeInputIndex].nftCommitment;
+        int lastClaimBlock = int(nftData.split(4)[0]);
+        int totalConsumed  = int(nftData.split(4)[1]);
 
-        // ── 3. Enforce interval: tx.locktime must be ≥ lastClaim + interval ───
         require(tx.locktime >= lastClaimBlock + intervalBlocks);
 
-        // ── 4. Verify contract has enough funds for merchant payout + miner fee
+        // ── 3. Validate claim amount ──────────────────────────────────────────
+        // Must be > 0 (no empty claims) and ≤ maxSats safety ceiling
+        require(pendingSats > 0);
+        require(totalConsumed + pendingSats <= maxSats);
+
+        // ── 4. Contract must have enough funds ────────────────────────────────
         int inputValue = tx.inputs[this.activeInputIndex].value;
         int minerFee   = 1500;
-        require(inputValue >= authorizedSats + minerFee);
+        require(inputValue >= pendingSats + minerFee);
 
-        // ── 5. Build updated NFT commitment (new lastClaimBlock, same rate) ───
-        bytes newCommitment = bytes4(tx.locktime) + nftData.split(4)[1];
+        // ── 5. Build updated NFT commitment ───────────────────────────────────
+        //    New lastClaimBlock = tx.locktime
+        //    New totalConsumed  = previous + pendingSats
+        int newTotalConsumed = totalConsumed + pendingSats;
+        bytes newCommitment  = bytes4(tx.locktime) + bytes4(newTotalConsumed);
 
-        // ── 6. Output 0: contract self-output with updated NFT and new balance ─
-        int contractBalance = inputValue - authorizedSats - minerFee;
+        // ── 6. Output 0: contract self-output, reduced balance, updated NFT ───
+        int contractBalance = inputValue - pendingSats - minerFee;
         require(tx.outputs[0].lockingBytecode == tx.inputs[this.activeInputIndex].lockingBytecode);
         require(tx.outputs[0].value           == contractBalance);
         require(tx.outputs[0].nftCommitment   == newCommitment);
         require(tx.outputs[0].tokenCategory   == tx.inputs[this.activeInputIndex].tokenCategory);
 
-        // ── 7. Output 1: merchant receives their authorized payment ────────────
+        // ── 7. Output 1: merchant receives exactly pendingSats ────────────────
         require(tx.outputs[1].lockingBytecode == new LockingBytecodeP2PKH(merchantPkh));
-        require(tx.outputs[1].value           == authorizedSats);
+        require(tx.outputs[1].value           == pendingSats);
     }
 
     /**
      * cancel()
      *
-     * The subscriber terminates the subscription and recovers remaining balance.
-     * The mutable NFT is deliberately NOT forwarded — subscription is destroyed.
+     * Subscriber terminates the subscription and recovers the full remaining balance.
+     * Any unconsumed credits are returned to the subscriber's wallet.
+     * The mutable NFT is destroyed (not forwarded) — subscription ends permanently.
      *
      * Required tx structure:
      *   inputs:   [0] this contract UTXO
@@ -94,7 +109,7 @@ contract AutoPaySubscription(
         require(tx.outputs[0].lockingBytecode == new LockingBytecodeP2PKH(subscriberPkh));
         require(tx.outputs[0].value           >= inputValue - minerFee);
 
-        // ── 3. Enforce NFT destruction (no token category in subscriber output)
-        require(tx.outputs[0].tokenCategory   == 0x);
+        // ── 3. Enforce NFT destruction (subscriber output carries no token)
+        require(tx.outputs[0].tokenCategory == 0x);
     }
 }

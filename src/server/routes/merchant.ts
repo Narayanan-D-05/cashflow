@@ -219,7 +219,21 @@ merchantRouter.post('/merchant/claim-all', async (_req: Request, res: Response):
 
     for (const record of active) {
         try {
-            const result = await buildAndSendClaimTx(record);
+            // Metered billing: only claim what users actually consumed
+            const usage = getUsage(record.tokenCategory);
+            const pendingSats = usage?.pendingSats ?? 0n;
+
+            if (pendingSats <= 0n) {
+                results.push({
+                    contractAddress: record.contractAddress,
+                    tokenCategory: record.tokenCategory,
+                    status: 'skipped',
+                    error: 'No pending usage to claim.',
+                });
+                continue;
+            }
+
+            const result = await buildAndSendClaimTx(record, pendingSats);
 
             // Update local store
             recordClaim(record.contractAddress, result.newLastClaimBlock, result.newBalance);
@@ -243,6 +257,7 @@ merchantRouter.post('/merchant/claim-all', async (_req: Request, res: Response):
                 tokenCategory: record.tokenCategory,
                 status: skipped ? 'skipped' : 'error',
                 error: errMsg,
+
             });
         }
     }

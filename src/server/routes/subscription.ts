@@ -134,11 +134,11 @@ subscriptionRouter.post('/deploy-subscription', async (req: Request, res: Respon
   }
 
   // Instantiate the covenant (deterministic, no broadcast)
-  const deployed = instantiateSubscriptionContract({ merchantPkhHex, subscriberPkhHex, intervalBlocks });
+  const deployed = instantiateSubscriptionContract({ merchantPkhHex, subscriberPkhHex, intervalBlocks, maxSats: authorizedSats });
 
-  // Build the genesis NFT commitment using current block height as start block
+  // Build the genesis NFT commitment: lastClaimBlock = currentBlock, totalConsumed = 0
   const currentBlock = await getBlockHeight();
-  const genesisCommitment = buildGenesisCommitment(currentBlock, authorizedSats);
+  const genesisCommitment = buildGenesisCommitment(currentBlock);
 
   // The NFT category will be the txid of the genesis (funding) input.
   // We cannot know it ahead of time — it is determined when the subscriber
@@ -237,6 +237,7 @@ subscriptionRouter.post('/subscription/fund-confirm', async (req: Request, res: 
     merchantPkhHex: record.merchantPkh,
     subscriberPkhHex: record.subscriberPkh,
     intervalBlocks: record.intervalBlocks,
+    maxSats: Number(record.authorizedSats),
   });
 
   const verification = await verifySubscriptionFunding({
@@ -351,7 +352,21 @@ subscriptionRouter.post('/subscription/claim', async (req: Request, res: Respons
     return;
   }
 
-  const result = await buildAndSendClaimTx(record);
+  // ── Metered billing: claim exactly what the user consumed ──────────────────
+  const { getUsage } = await import('../../services/usageMeter.js');
+  const usage = getUsage(record.tokenCategory);
+  const pendingSats = usage?.pendingSats ?? 0n;
+
+  if (pendingSats <= 0n) {
+    res.status(400).json({
+      error: 'No pending usage to claim. Users have not consumed any API credits since the last claim.',
+      pendingSats: '0',
+      hint: 'Users need to make API calls via X-Subscription-Token before you can claim.',
+    });
+    return;
+  }
+
+  const result = await buildAndSendClaimTx(record, pendingSats);
 
   // Update local store
   recordClaim(
@@ -360,7 +375,7 @@ subscriptionRouter.post('/subscription/claim', async (req: Request, res: Respons
     result.newBalance,
   );
 
-  // Reset usage meter pending sats (Step 5 — settlement)
+  // Reset pending sats to zero after successful on-chain settlement
   resetPendingSats(record.tokenCategory, result.claimedSats);
 
   const response: ClaimPaymentResponse = {
@@ -477,8 +492,11 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
   }
 
   const network = (process.env['BCH_NETWORK'] ?? 'chipnet') as 'chipnet' | 'mainnet';
-  const intervalBlocks = parseInt(process.env['DEFAULT_INTERVAL_BLOCKS'] ?? '1', 10); // 1 block for fast demo claim testing
-  const authorizedSats = parseInt(process.env['DEFAULT_AUTHORIZED_SATS'] ?? '1000', 10);
+  const intervalBlocks = parseInt(process.env['DEFAULT_INTERVAL_BLOCKS'] ?? '1', 10);
+  // depositSats = total credits user pre-funds; merchant claims from this pool as usage accrues
+  const depositSats = parseInt(process.env['DEFAULT_DEPOSIT_SATS'] ?? '200000', 10);
+  // maxSats = safety ceiling for total lifetime claims (= depositSats for full metered billing)
+  const maxSats = depositSats;
 
   // Generate subscriber keypair
   const subscriberKp = generateKeyPair(network);
@@ -499,12 +517,12 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
 
   const subscriberPkhHex = toHex(addressToPkh(subscriberAddress));
 
-  // Instantiate contract (deterministic, no broadcast)
-  const deployed = instantiateSubscriptionContract({ merchantPkhHex, subscriberPkhHex, intervalBlocks });
+  // Instantiate contract (deterministic, no broadcast) — now 4-arg with maxSats
+  const deployed = instantiateSubscriptionContract({ merchantPkhHex, subscriberPkhHex, intervalBlocks, maxSats });
 
   const currentBlock = await getBlockHeight();
-  const genesisCommitment = buildGenesisCommitment(currentBlock, authorizedSats);
-  const depositSats = authorizedSats * 4; // 4 intervals pre-funded
+  // Genesis commitment: lastClaimBlock = currentBlock, totalConsumed = 0
+  const genesisCommitment = buildGenesisCommitment(currentBlock);
 
   const placeholderCategory = `pending_${deployed.contractAddress.slice(-12)}`;
   const now = new Date().toISOString();
@@ -517,7 +535,7 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
     subscriberAddress,
     merchantAddress,
     intervalBlocks,
-    authorizedSats: BigInt(authorizedSats),
+    authorizedSats: BigInt(maxSats),  // maxSats stored as the ceiling
     lastClaimBlock: currentBlock,
     balance: 0n,
     status: 'pending_funding',
@@ -532,7 +550,7 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
     tokenAddress: deployed.tokenAddress,
     genesisCommitment,
     depositSats,
-    authorizedSats,
+    maxSats,
     intervalBlocks,
     startBlock: currentBlock,
     hint: `Fund ${subscriberAddress} with at least ${depositSats + 5000} sats from https://tbch.googol.cash, then call POST /subscription/auto-fund`,
@@ -579,16 +597,19 @@ subscriptionRouter.post('/subscription/auto-fund', async (req: Request, res: Res
     return;
   }
 
-  // Re-instantiate contract to get tokenAddress
+  // Re-instantiate contract to get tokenAddress — pass maxSats (= authorizedSats ceiling stored at create-session)
+  const maxSats = Number(record.authorizedSats);
   const deployed = instantiateSubscriptionContract({
     merchantPkhHex: record.merchantPkh,
     subscriberPkhHex: record.subscriberPkh,
     intervalBlocks: record.intervalBlocks,
+    maxSats,
   });
 
   const currentBlock = await getBlockHeight();
-  const genesisCommitment = buildGenesisCommitment(currentBlock, Number(record.authorizedSats));
-  const depositSats = record.authorizedSats * 4n;
+  // Genesis commitment: totalConsumed starts at 0
+  const genesisCommitment = buildGenesisCommitment(currentBlock);
+  const depositSats = record.authorizedSats;
 
   const provider = getProvider();
 

@@ -1,5 +1,5 @@
 {
-  "name": "@narayanan-me/cashflow402",
+  "name": "cashflow402-bch",
   "version": "1.0.0",
   "description": "BCH-native HTTP-402 micropayment and CashToken subscription protocol — pay-per-call and recurring subscriptions backed by Bitcoin Cash smart contracts.",
   "main": "./dist/sdk/index.js",
@@ -8,11 +8,11 @@
   "exports": {
     ".": {
       "import": "./dist/sdk/index.js",
-      "types":  "./dist/sdk/index.d.ts"
+      "types": "./dist/sdk/index.d.ts"
     },
     "./server": {
       "import": "./dist/server/index.js",
-      "types":  "./dist/server/index.d.ts"
+      "types": "./dist/server/index.d.ts"
     }
   },
   "files": [
@@ -24,13 +24,14 @@
     ".env.example"
   ],
   "scripts": {
-    "dev":               "tsx src/server/index.ts",
-    "build":             "tsc",
-    "start":             "node dist/server/index.js",
-    "test":              "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+    "dev": "tsx src/server/index.ts",
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
     "compile-contracts": "cashc contracts/AutoPaySubscription.cash -o src/contracts/AutoPaySubscription.json",
-    "chipnet-e2e":       "tsx scripts/chipnet-e2e.ts",
-    "prepublishOnly":    "npm run build && npm test"
+    "chipnet-e2e": "tsx scripts/chipnet-e2e.ts",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [
     "bitcoin-cash",
@@ -52,7 +53,7 @@
   },
   "repository": {
     "type": "git",
-    "url":  "git+https://github.com/Narayanan-D-05/cashflow.git"
+    "url": "git+https://github.com/Narayanan-D-05/cashflow.git"
   },
   "bugs": {
     "url": "https://github.com/Narayanan-D-05/cashflow/issues"

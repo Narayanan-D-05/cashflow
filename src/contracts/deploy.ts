@@ -6,7 +6,8 @@
  * Design decisions:
  *   • The server acts as the MERCHANT — it holds the merchant WIF and signs claim txs.
  *   • The subscriber funds the contract manually (sends BCH + mutable NFT to tokenAddress).
- *   • The server monitors the contract address for funding via Electrum subscriptions.
+ *   • Claim amount = pendingSats (actual API usage) NOT a fixed subscriptionRate.
+ *   • Subscriber can always cancel() to reclaim unconsumed balance.
  */
 
 import { Contract, ElectrumNetworkProvider, SignatureTemplate, TransactionBuilder, Network } from 'cashscript';
@@ -16,8 +17,6 @@ import { connectElectrum, getBlockHeight } from '../services/electrumService.js'
 import type { SubscriptionRecord } from '../types.js';
 
 // ─── Load compiled artifact ───────────────────────────────────────────────────
-// cashc compiled the contract to JSON; we import it using CJS require
-// (resolveJsonModule in tsconfig handles this for ESM-compatible import).
 const require = createRequire(import.meta.url);
 const AutoPaySubscriptionArtifact = require('./AutoPaySubscription.json') as import('@cashscript/utils').Artifact;
 
@@ -53,28 +52,25 @@ export interface DeployedContract {
   tokenAddress: string;
   /** The CashScript Contract instance (use to build claim/cancel txs) */
   contract: Contract;
-  /** Merchant and subscriber PKH baked into the covenant, hex */
   merchantPkhHex: string;
   subscriberPkhHex: string;
   intervalBlocks: number;
+  maxSats: number;
 }
 
 /**
- * Instantiate (or re-instantiate) an AutoPaySubscription contract for the
- * given merchant/subscriber pair and interval parameters.
+ * Instantiate (or re-instantiate) an AutoPaySubscription contract.
  *
- * This does NOT broadcast any transaction — it just returns the deterministic
- * contract address derived from the constructor arguments.
- *
- * The genesis funding transaction (which also mints the subscription NFT)
- * must be built by the subscriber's wallet (see `buildSubscriptionFundingInstructions`).
+ * Now takes `maxSats` — the absolute ceiling on total sats the merchant
+ * can ever claim. Set this to the full deposit for uncapped metered billing.
  */
 export function instantiateSubscriptionContract(opts: {
   merchantPkhHex: string;
   subscriberPkhHex: string;
   intervalBlocks: number;
+  maxSats: number;
 }): DeployedContract {
-  const { merchantPkhHex, subscriberPkhHex, intervalBlocks } = opts;
+  const { merchantPkhHex, subscriberPkhHex, intervalBlocks, maxSats } = opts;
 
   const provider = getProvider();
 
@@ -83,7 +79,7 @@ export function instantiateSubscriptionContract(opts: {
 
   const contract = new Contract(
     AutoPaySubscriptionArtifact,
-    [merchantPkh, subscriberPkh, BigInt(intervalBlocks)],
+    [merchantPkh, subscriberPkh, BigInt(intervalBlocks), BigInt(maxSats)],
     { provider },
   );
 
@@ -94,60 +90,69 @@ export function instantiateSubscriptionContract(opts: {
     merchantPkhHex,
     subscriberPkhHex,
     intervalBlocks,
+    maxSats,
   };
 }
 
 /**
- * Build the hex-encoded NFT commitment for the genesis (initial) funding
- * transaction.  The subscriber must embed this commitment in the mutable NFT
- * they send to `tokenAddress`.
+ * Build the genesis NFT commitment for the initial funding transaction.
  *
- * @param startBlock      — current BCH block height (the "last claim" block)
- * @param authorizedSats  — max sats merchant may claim per interval
+ * Layout (8 bytes):
+ *   bytes [0..3]: startBlock     (int32 LE) — treated as lastClaimBlock initially
+ *   bytes [4..7]: totalConsumed  (int32 LE) — starts at 0
  */
-export function buildGenesisCommitment(startBlock: number, authorizedSats: number): string {
-  return buildNftCommitment(startBlock, authorizedSats);
+export function buildGenesisCommitment(startBlock: number): string {
+  // totalConsumed starts at 0 — no usage yet
+  return buildNftCommitment(startBlock, 0);
 }
 
-// ─── Merchant claim transaction ───────────────────────────────────────────────
+// ─── Merchant claim transaction (metered billing) ─────────────────────────────
 
 /**
  * Build and broadcast a merchant claim transaction.
  *
- * Preconditions:
- *   1. The contract UTXO holds BCH + a mutable NFT with the subscription state.
- *   2. At least `intervalBlocks` have passed since `lastClaimBlock`.
+ * `pendingSats` is the actual amount consumed by API calls since the last claim,
+ * as tracked by usageMeter. The on-chain contract verifies this is ≤ maxSats ceiling.
  *
  * Tx structure:
- *   Input  [0]: contract UTXO (unlocked with claim(merchantPk, merchantSig))
- *   Output [0]: contract (self, with updated NFT commitment)
- *   Output [1]: merchant P2PKH (authorizedSats)
+ *   Input  [0]: contract UTXO (unlocked with claim(pk, sig, pendingSats))
+ *   Output [0]: contract (self, updated NFT commitment with new totalConsumed)
+ *   Output [1]: merchant P2PKH (exactly pendingSats)
  */
-export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
+export async function buildAndSendClaimTx(
+  record: SubscriptionRecord,
+  pendingSats: bigint,
+): Promise<{
   txid: string;
   claimedSats: bigint;
   newLastClaimBlock: number;
   newBalance: bigint;
 }> {
+  if (pendingSats <= 0n) {
+    throw new Error('pendingSats must be > 0. No usage to claim yet.');
+  }
+
   const provider = getProvider();
   const merchantKp = wifToKeyPair(getMerchantWif());
 
   const { merchantPkh, subscriberPkh, intervalBlocks } = record;
 
-  // Re-instantiate the contract to get the correct address + unlock functions
+  // maxSats = total deposit (full ceiling — merchant can claim all of it over time)
+  const maxSats = record.balance > 0n ? Number(record.balance) * 4 : 200_000;
+
   const { contract } = instantiateSubscriptionContract({
     merchantPkhHex: merchantPkh,
     subscriberPkhHex: subscriberPkh,
     intervalBlocks,
+    maxSats,
   });
 
-  // Fetch contract UTXOs (explicitly from tokenAddress where the NFT lives)
+  // Fetch contract UTXOs from the token address where the NFT lives
   const utxos = await provider.getUtxos(contract.tokenAddress);
   if (utxos.length === 0) {
     throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);
   }
 
-  // Find the UTXO carrying the subscription mutable NFT
   const contractUtxo = utxos.find(
     u => u.token?.category?.toLowerCase() === record.tokenCategory.toLowerCase()
       && u.token?.nft?.capability === 'mutable',
@@ -156,11 +161,13 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
     throw new Error(`Subscription NFT (category: ${record.tokenCategory}) not found in contract UTXOs.`);
   }
 
-  // Decode current NFT state
+  // Decode current NFT state: [lastClaimBlock][totalConsumed]
   const commitment = contractUtxo.token!.nft!.commitment;
-  const { lastClaimBlock, authorizedSats } = parseNftCommitment(commitment);
+  const { lastClaimBlock } = parseNftCommitment(commitment);
+  // totalConsumed is bytes [4..7]: read as int
+  const commitBuf = Buffer.from(commitment, 'hex');
+  const totalConsumed = commitBuf.length >= 8 ? commitBuf.readInt32LE(4) : 0;
 
-  // Fetch current block height to use as tx locktime
   const currentBlock = await getBlockHeight();
 
   if (currentBlock < lastClaimBlock + intervalBlocks) {
@@ -171,29 +178,31 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
   }
 
   const MINER_FEE = 1500n;
-  const claimedSats = BigInt(authorizedSats);
   const inputValue = contractUtxo.satoshis;
-  const returnToContract = inputValue - claimedSats - MINER_FEE;
+  const returnToContract = inputValue - pendingSats - MINER_FEE;
 
   if (returnToContract < 0n) {
     throw new Error(
-      `Insufficient contract balance (${inputValue} sats) to claim ${claimedSats} sats + ${MINER_FEE} fee.`,
+      `Insufficient contract balance (${inputValue} sats) to claim ${pendingSats} sats + ${MINER_FEE} fee.`,
     );
   }
 
-  // Build updated NFT commitment: new lastClaimBlock = currentBlock
-  const newCommitmentHex = buildNftCommitment(currentBlock, authorizedSats);
+  // Build updated NFT commitment:
+  //   bytes [0..3] = currentBlock (new lastClaimBlock)
+  //   bytes [4..7] = totalConsumed + pendingSats
+  const newTotalConsumed = totalConsumed + Number(pendingSats);
+  const newCommitmentHex = buildNftCommitment(currentBlock, newTotalConsumed);
 
   // Build the claim transaction
   const sigTemplate = new SignatureTemplate(merchantKp.privateKey);
-  const unlocker = contract.unlock.claim(merchantKp.publicKey, sigTemplate);
+  // Pass pendingSats as the third argument to claim(pk, sig, pendingSats)
+  const unlocker = contract.unlock.claim(merchantKp.publicKey, sigTemplate, pendingSats);
 
   const txBuilder = new TransactionBuilder({ provider });
-
   txBuilder.addInput(contractUtxo, unlocker);
   txBuilder.setLocktime(currentBlock);
 
-  // Output 0: contract self-output with updated NFT
+  // Output 0: contract self-output with updated NFT commitment
   txBuilder.addOutput({
     to: contract.tokenAddress,
     amount: returnToContract,
@@ -207,34 +216,34 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
     },
   });
 
-  // Output 1: merchant receives authorized payment
+  // Output 1: merchant receives exactly pendingSats
   txBuilder.addOutput({
     to: record.merchantAddress,
-    amount: claimedSats,
+    amount: pendingSats,
   });
 
   const txDetails = await txBuilder.send();
 
   return {
     txid: txDetails.txid,
-    claimedSats,
+    claimedSats: pendingSats,
     newLastClaimBlock: currentBlock,
     newBalance: returnToContract,
   };
 }
 
-// ─── Subscriber cancel transaction ───────────────────────────────────────────
+// ─── Subscriber cancel (withdraw remaining balance) ───────────────────────────
 
 /**
  * Build and broadcast a subscriber cancel transaction.
  *
- * The subscriber WIF must be provided at call time (never stored server-side
- * in production — this endpoint is for demo/SDK integration purposes).
+ * The subscriber receives the full remaining contract balance back to their wallet.
+ * The mutable NFT is deliberately NOT forwarded → subscription is permanently destroyed.
  *
  * Tx structure:
  *   Input  [0]: contract UTXO
- *   Output [0]: subscriber P2PKH (full remaining balance minus fee)
- *               NFT is NOT forwarded → subscription destroyed.
+ *   Output [0]: subscriber P2PKH (full remaining balance minus miner fee)
+ *               No token output → NFT burned / subscription ended.
  */
 export async function buildAndSendCancelTx(
   record: SubscriptionRecord,
@@ -243,10 +252,13 @@ export async function buildAndSendCancelTx(
   const provider = getProvider();
   const subscriberKp = wifToKeyPair(subscriberWif);
 
+  const maxSats = record.balance > 0n ? Number(record.balance) * 4 : 200_000;
+
   const { contract } = instantiateSubscriptionContract({
     merchantPkhHex: record.merchantPkh,
     subscriberPkhHex: record.subscriberPkh,
     intervalBlocks: record.intervalBlocks,
+    maxSats,
   });
 
   const utxos = await provider.getUtxos(contract.tokenAddress);
@@ -256,7 +268,7 @@ export async function buildAndSendCancelTx(
 
   const contractUtxo = utxos.find(
     u => u.token?.category?.toLowerCase() === record.tokenCategory.toLowerCase(),
-  ) ?? utxos[0];
+  ) ?? utxos[0]!;
 
   const MINER_FEE = 1500n;
   const refunded = contractUtxo.satoshis - MINER_FEE;
@@ -267,7 +279,7 @@ export async function buildAndSendCancelTx(
   const txBuilder = new TransactionBuilder({ provider });
   txBuilder.addInput(contractUtxo, unlocker);
 
-  // Return all BCH to subscriber; omit token from output → NFT destroyed
+  // Return all BCH to subscriber; omit token → NFT destroyed
   txBuilder.addOutput({
     to: record.subscriberAddress,
     amount: refunded,
