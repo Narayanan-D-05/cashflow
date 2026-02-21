@@ -183,9 +183,14 @@ export default function SubscriptionPage() {
 
     // API call counter (for Step 4 repeat calls)
     const [callCount, setCallCount] = useState(0);
+    const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
 
     // On mount, load session from localStorage
     useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            setCallbackUrl(urlParams.get("callbackUrl"));
+        }
         const saved = localStorage.getItem("cashflow402_demo_session");
         if (saved) {
             try {
@@ -474,6 +479,15 @@ export default function SubscriptionPage() {
                                                 >
                                                     <ExternalLink className="w-3.5 h-3.5" /> View on ChipNet explorer
                                                 </a>
+                                                {callbackUrl && (
+                                                    <a
+                                                        href={`${callbackUrl}?tokenCategory=${fundData.tokenCategory}`}
+                                                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
+                                                        bg-blue-600 text-white shadow-md hover:bg-blue-500 transition-all"
+                                                    >
+                                                        <Zap className="w-3.5 h-3.5" /> Continue to Merchant App
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     )}
