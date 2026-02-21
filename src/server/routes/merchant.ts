@@ -30,7 +30,7 @@ import {
     getUsage,
 } from '../../services/usageMeter.js';
 import { buildAndSendClaimTx } from '../../contracts/deploy.js';
-import { wifToKeyPair, toHex } from '../../utils/crypto.js';
+
 
 export const merchantRouter = Router();
 
@@ -65,18 +65,11 @@ merchantRouter.post('/merchant/plan', (req: Request, res: Response): void => {
         return;
     }
 
-    const merchantWif = process.env['MERCHANT_WIF'];
-    if (!merchantWif) {
-        res.status(500).json({ error: 'MERCHANT_WIF not configured on this server.' });
-        return;
-    }
-
-    let merchantAddress: string;
-    try {
-        const kp = wifToKeyPair(merchantWif, process.env['BCH_NETWORK'] ?? 'chipnet');
-        merchantAddress = kp.address;
-    } catch (e) {
-        res.status(500).json({ error: `Merchant key error: ${String(e)}` });
+    // Use MERCHANT_ADDRESS env var directly — WIF is only needed for signing
+    // on-chain claim transactions, not for plan configuration.
+    const merchantAddress = process.env['MERCHANT_ADDRESS'];
+    if (!merchantAddress) {
+        res.status(500).json({ error: 'MERCHANT_ADDRESS not configured on this server.' });
         return;
     }
 
