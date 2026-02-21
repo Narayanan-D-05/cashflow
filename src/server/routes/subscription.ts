@@ -149,6 +149,7 @@ subscriptionRouter.post('/deploy-subscription', async (req: Request, res: Respon
   const now = new Date().toISOString();
   addSubscription({
     contractAddress: deployed.contractAddress,
+    tokenAddress: deployed.tokenAddress,
     tokenCategory: placeholderCategory,
     merchantPkh: merchantPkhHex,
     subscriberPkh: subscriberPkhHex,
@@ -529,6 +530,7 @@ subscriptionRouter.post('/subscription/create-session', async (req: Request, res
 
   addSubscription({
     contractAddress: deployed.contractAddress,
+    tokenAddress: deployed.tokenAddress,
     tokenCategory: placeholderCategory,
     merchantPkh: merchantPkhHex,
     subscriberPkh: subscriberPkhHex,
@@ -634,6 +636,7 @@ subscriptionRouter.post('/subscription/auto-fund', async (req: Request, res: Res
   // Activate the subscription
   updateSubscription(contractAddress, {
     tokenCategory,
+    tokenAddress: deployed.tokenAddress,
     balance: depositSats,
     status: 'active',
   });

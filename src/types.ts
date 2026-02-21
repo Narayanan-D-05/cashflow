@@ -6,11 +6,13 @@
 // ─── Subscription ─────────────────────────────────────────────────────────────
 
 export type SubscriptionStatus = 'pending_funding' | 'active' | 'cancelled' | 'expired';
-export type SubscriptionTier   = 'basic' | 'pro';
+export type SubscriptionTier = 'basic' | 'pro';
 
 export interface SubscriptionRecord {
   /** BCH P2SH address of the AutoPaySubscription covenant */
   contractAddress: string;
+  /** Token-aware address (P2SH20 + token prefix) — where the NFT UTXO actually lives */
+  tokenAddress: string;
   /** CashToken category hex (32 bytes) minted at genesis — uniquely identifies this subscription */
   tokenCategory: string;
   /** Merchant P2PKH hash (20 bytes hex) baked into the covenant */

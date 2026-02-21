@@ -22,6 +22,7 @@ import {
 import {
     getAllSubscriptions,
     recordClaim,
+    setStatus,
 } from '../../services/subscriptionStore.js';
 import {
     getAllUsage,
@@ -250,6 +251,19 @@ merchantRouter.post('/merchant/claim-all', async (_req: Request, res: Response):
             });
         } catch (e) {
             const errMsg = String(e);
+
+            // If the UTXO is gone, the subscriber likely withdrew/cancelled. Mark it as cancelled.
+            if (errMsg.includes('No UTXOs found')) {
+                setStatus(record.contractAddress, 'cancelled');
+                results.push({
+                    contractAddress: record.contractAddress,
+                    tokenCategory: record.tokenCategory,
+                    status: 'skipped',
+                    error: 'Subscription was cancelled by user (NFT missing). Marked as cancelled.',
+                });
+                continue;
+            }
+
             // "Interval not yet elapsed" is expected — not an error
             const skipped = errMsg.includes('Interval not yet elapsed');
             results.push({
@@ -257,7 +271,6 @@ merchantRouter.post('/merchant/claim-all', async (_req: Request, res: Response):
                 tokenCategory: record.tokenCategory,
                 status: skipped ? 'skipped' : 'error',
                 error: errMsg,
-
             });
         }
     }

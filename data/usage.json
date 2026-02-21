@@ -1786,5 +1786,107 @@
       }
     ],
     "lastUsedAt": "2026-02-21T18:36:17.704Z"
+  },
+  {
+    "tokenCategory": "9e29cec8cf1b11e6ea153b52b6b45d8f862dc82cab345330b4c761d4d8a6ed44",
+    "contractAddress": "bchtest:pw2vkegje39d42dg3kvcaaw9325qrdcad7qkcn3kh7w0wax2058vqve57vjuu",
+    "pendingSats": "0",
+    "totalSats": "2400",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T19:41:03.980Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "f97463a1"
+      },
+      {
+        "timestamp": "2026-02-21T19:40:59.700Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "4b9217b8"
+      },
+      {
+        "timestamp": "2026-02-21T19:40:54.906Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "ca0ec252"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T19:41:03.980Z"
+  },
+  {
+    "tokenCategory": "9b5fad52d6f23fcfbd76b6f4a7603e9af23c7db87439d87bc1130706e790276b",
+    "contractAddress": "bchtest:p0jd99w35zqkyea7jrx5zcyfgd6ua027c9as5zx738djxx3pnpnw7egkec74p",
+    "pendingSats": "0",
+    "totalSats": "1600",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T19:42:29.130Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "f55cac47"
+      },
+      {
+        "timestamp": "2026-02-21T19:42:24.599Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "19e4e64f"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T19:42:29.130Z"
+  },
+  {
+    "tokenCategory": "6e4a957967bc207151ba5826de7b9c2341486205cca38cdb0f8b51842b8c33ca",
+    "contractAddress": "bchtest:p0qw75s44h6me2dwad0nw2ds4pwvprjy500u32dt9gvgyrhcvq2v78eelcpxa",
+    "pendingSats": "0",
+    "totalSats": "2400",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T20:03:11.481Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "61ab9e6b"
+      },
+      {
+        "timestamp": "2026-02-21T19:59:33.699Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "55f91bc6"
+      },
+      {
+        "timestamp": "2026-02-21T19:59:26.694Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "5f1106bd"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T20:03:11.481Z"
+  },
+  {
+    "tokenCategory": "4107b0cd1aaad698da61f60efd184686b57c297bb0f2dfefe0ae01a48e4be6d5",
+    "contractAddress": "bchtest:pdvcdwnj0qtvwjv5a4607r3kmxt6tnl2tj7mqe5vaenvrkvz5sgwx6kzuf32a",
+    "pendingSats": "2400",
+    "totalSats": "2400",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T20:05:25.642Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "3aad03b5"
+      },
+      {
+        "timestamp": "2026-02-21T20:05:22.089Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "3234be5f"
+      },
+      {
+        "timestamp": "2026-02-21T20:05:18.888Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "fdf11c19"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T20:05:25.642Z"
   }
 ]

@@ -34,7 +34,8 @@ interface SessionData {
     tokenAddress: string;
     genesisCommitment: string;
     depositSats: number;
-    authorizedSats: number;
+    authorizedSats?: number;  // legacy
+    maxSats?: number;         // metered billing ceiling
     intervalBlocks: number;
     startBlock: number;
     hint: string;
@@ -45,7 +46,8 @@ interface FundData {
     tokenCategory: string;
     contractAddress: string;
     depositSats: string;
-    authorizedSats: string;
+    authorizedSats?: string;  // legacy
+    maxSats?: string;         // metered billing ceiling
     intervalBlocks: number;
 }
 
@@ -340,6 +342,35 @@ export default function SubscriptionPage() {
         }
     }, [session, fundData]);
 
+    // ── Cancel: POST /subscription/cancel ─────────────────────────────
+    const [cancelData, setCancelData] = useState<{ txid: string; refundedSats: string } | null>(null);
+    const [sCancelStatus, setSCancelStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+    const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+
+    const runCancel = useCallback(async () => {
+        if (!session?.contractAddress || !session?.subscriberWif) return;
+        setSCancelStatus("running");
+        setConfirmWithdraw(false);
+        setErrorMsg(null);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/subscription/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contractAddress: session.contractAddress,
+                    subscriberWif: session.subscriberWif,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? JSON.stringify(data));
+            setCancelData({ txid: data.txid, refundedSats: data.refundedSats });
+            setSCancelStatus("done");
+        } catch (e) {
+            setSCancelStatus("error");
+            err(String(e));
+        }
+    }, [session]);
+
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
@@ -411,8 +442,8 @@ export default function SubscriptionPage() {
                                     <MonoRow label="Token Address" value={session.tokenAddress} />
                                     <div className="grid grid-cols-3 gap-2 text-center">
                                         {[
-                                            { label: "Deposit Required", value: `${session.depositSats.toLocaleString()} sats` },
-                                            { label: "Authorized / Interval", value: `${session.authorizedSats.toLocaleString()} sats` },
+                                            { label: "Deposit Required", value: `${(session.depositSats ?? 0).toLocaleString()} sats` },
+                                            { label: "Max Claimable", value: `${(session.maxSats ?? session.authorizedSats ?? 0).toLocaleString()} sats` },
                                             { label: "Interval Blocks", value: `${session.intervalBlocks} blocks` },
                                         ].map(({ label, value }) => (
                                             <div key={label} className="bg-[var(--color-surface-alt)] rounded-xl p-2">
@@ -528,6 +559,85 @@ export default function SubscriptionPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* ── Withdraw Remaining Balance ────────────────── */}
+                                    {(fundData && s3 === "done") || cancelData ? (
+                                        <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                                            {cancelData ? (
+                                                // ── Success state: show txid + refunded amount ──
+                                                <div className="flex flex-col gap-2 animate-fade-in">
+                                                    <div className="flex items-center gap-2 text-green-400 text-sm font-semibold">
+                                                        ✅ Refunded {cancelData.refundedSats} sats to your wallet
+                                                    </div>
+                                                    <MonoRow label="Refund txid" value={cancelData.txid} />
+                                                    <a
+                                                        href={`https://chipnet.imaginary.cash/tx/${cancelData.txid}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
+                                                        border border-[var(--color-border)] text-[var(--color-text-muted)]
+                                                        hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)] transition-all w-fit"
+                                                    >
+                                                        <ExternalLink className="w-3.5 h-3.5" /> View refund on ChipNet
+                                                    </a>
+                                                    <button
+                                                        onClick={clearSession}
+                                                        className="mt-2 flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold
+                                                        border border-[var(--color-border)] text-[var(--color-text-muted)]
+                                                        hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)] transition-all w-fit"
+                                                    >
+                                                        🔄 Start New Subscription
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                // ── Button state: offer withdrawal ──
+                                                <>
+                                                    <p className="text-xs text-[var(--color-text-muted)] mb-3">
+                                                        Done using the service? Cancel your subscription and withdraw
+                                                        your unused balance back to your wallet.
+                                                    </p>
+                                                    {confirmWithdraw ? (
+                                                        // Inline confirmation — no browser popup
+                                                        <div className="flex flex-col gap-2 p-3 rounded-xl border border-red-500/40 bg-red-950/20 animate-fade-in">
+                                                            <p className="text-xs text-red-400 font-semibold">
+                                                                ⚠️ This is irreversible. The NFT will be burned and remaining BCH sent to your address.
+                                                            </p>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={runCancel}
+                                                                    disabled={sCancelStatus === "running"}
+                                                                    className="flex items-center gap-2 py-2 px-4 rounded-xl text-sm font-semibold
+                                                                    bg-red-600 text-white hover:bg-red-500
+                                                                    disabled:opacity-40 transition-all"
+                                                                >
+                                                                    {sCancelStatus === "running"
+                                                                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Broadcasting…</>
+                                                                        : <>✅ Yes, withdraw now</>}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmWithdraw(false)}
+                                                                    className="py-2 px-4 rounded-xl text-sm font-semibold
+                                                                    border border-[var(--color-border)] text-[var(--color-text-muted)]
+                                                                    hover:border-[var(--color-brand)]/40 transition-all"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setConfirmWithdraw(true)}
+                                                            className="flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold
+                                                            bg-red-600/80 text-white hover:bg-red-500
+                                                            border border-red-500/30 transition-all duration-200"
+                                                        >
+                                                            💸 Withdraw Remaining Balance
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : null}
                                 </>
                             ) : (
                                 <p className="text-xs text-[var(--color-text-faint)]">Complete Step 1 first.</p>
@@ -562,9 +672,9 @@ export default function SubscriptionPage() {
                     </div>
 
                 </div>
-            </main>
+            </main >
 
             <Footer />
-        </div>
+        </div >
     );
 }

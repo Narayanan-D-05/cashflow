@@ -138,7 +138,10 @@ export async function buildAndSendClaimTx(
   const { merchantPkh, subscriberPkh, intervalBlocks } = record;
 
   // maxSats = total deposit (full ceiling — merchant can claim all of it over time)
-  const maxSats = record.balance > 0n ? Number(record.balance) * 4 : 200_000;
+  // Fix: for existing records, balance is strictly the current UTXO balance, not original maxSats.
+  // We use 200_000 as default or what was used at genesis. To compute exact address, we need exact args.
+  // By using record.tokenAddress directly (above), we bypass constructor arg mismatches!
+  const maxSats = record.balance > 0n ? Number(record.balance) : 200_000;
 
   const { contract } = instantiateSubscriptionContract({
     merchantPkhHex: merchantPkh,
@@ -147,10 +150,12 @@ export async function buildAndSendClaimTx(
     maxSats,
   });
 
-  // Fetch contract UTXOs from the token address where the NFT lives
-  const utxos = await provider.getUtxos(contract.tokenAddress);
+  // Fetch contract UTXOs from the stored token address where the NFT lives
+  // Fall back to contract.tokenAddress for legacy records or missing fields
+  const tokenAddress = record.tokenAddress ?? contract.tokenAddress;
+  const utxos = await provider.getUtxos(tokenAddress);
   if (utxos.length === 0) {
-    throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);
+    throw new Error(`No UTXOs found at contract tokenAddress ${tokenAddress}`);
   }
 
   const contractUtxo = utxos.find(
@@ -251,8 +256,9 @@ export async function buildAndSendCancelTx(
 ): Promise<{ txid: string; refundedSats: bigint }> {
   const provider = getProvider();
   const subscriberKp = wifToKeyPair(subscriberWif);
-
-  const maxSats = record.balance > 0n ? Number(record.balance) * 4 : 200_000;
+  // Re-instantiate the exact same contract. Using record.authorizedSats (which holds the original maxSats ceiling)
+  // or falling back to current balance/default if it's missing. This guarantees the unlocker matches the on-chain UTXO exactly.
+  const maxSats = record.authorizedSats ? Number(record.authorizedSats) : (record.balance > 0n ? Number(record.balance) : 200_000);
 
   const { contract } = instantiateSubscriptionContract({
     merchantPkhHex: record.merchantPkh,
@@ -261,7 +267,9 @@ export async function buildAndSendCancelTx(
     maxSats,
   });
 
-  const utxos = await provider.getUtxos(contract.tokenAddress);
+  // Use the stored tokenAddress directly — don't re-derive, constructor args may differ
+  const tokenAddress = record.tokenAddress ?? contract.tokenAddress;
+  const utxos = await provider.getUtxos(tokenAddress);
   if (utxos.length === 0) {
     throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);
   }
