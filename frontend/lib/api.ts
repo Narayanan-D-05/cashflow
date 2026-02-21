@@ -15,27 +15,27 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 export type SubscriptionStatus = "active" | "paused" | "expired" | "cancelled";
 
 export interface SubscriptionRecord {
-  contractAddress:   string;
-  tokenCategory:     string;
-  merchantPkh:       string;
-  subscriberPkh:     string;
+  contractAddress: string;
+  tokenCategory: string;
+  merchantPkh: string;
+  subscriberPkh: string;
   subscriberAddress: string;
-  merchantAddress:   string;
-  intervalBlocks:    number;
-  authorizedSats:    string;   // BigInt serialised as string from backend
-  lastClaimBlock:    number;
-  balance:           string;   // BigInt serialised as string from backend
-  status:            SubscriptionStatus;
-  createdAt:         string;
-  updatedAt:         string;
+  merchantAddress: string;
+  intervalBlocks: number;
+  authorizedSats: string;   // BigInt serialised as string from backend
+  lastClaimBlock: number;
+  balance: string;   // BigInt serialised as string from backend
+  status: SubscriptionStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateSubscriptionInput {
-  merchantAddress:   string;
+  merchantAddress: string;
   subscriberPrivKey: string;
-  intervalBlocks:    number;
-  authorizedSats:    number;
-  initialDeposit:    number;
+  intervalBlocks: number;
+  authorizedSats: number;
+  initialDeposit: number;
 }
 
 export interface VerifyResult {
@@ -77,12 +77,12 @@ async function post<T>(
 
 // ─── Challenge response ─────────────────────────────────────────────────────
 export interface ChallengeResult {
-  paymentUri:      string;
-  amountSats:      number;
+  paymentUri: string;
+  amountSats: number;
   merchantAddress: string;
-  nonce:           string;
-  verifyUrl:       string;
-  expiresAt:       number;
+  nonce: string;
+  verifyUrl: string;
+  expiresAt: number;
 }
 
 export const api = {
@@ -110,7 +110,7 @@ export const api = {
    */
   getChallenge(params?: { amountSats?: number; path?: string }): Promise<ChallengeResult> {
     const qs = new URLSearchParams();
-    if (params?.path)       qs.set("path",       params.path);
+    if (params?.path) qs.set("path", params.path);
     if (params?.amountSats) qs.set("amountSats", String(params.amountSats));
     const query = qs.toString() ? `?${qs}` : "";
     return get<ChallengeResult>(`/payment/challenge${query}`);
@@ -142,16 +142,16 @@ export const api = {
    * POST /subscription/create-session
    */
   createSession(): Promise<{
-    subscriberAddress:  string;
-    subscriberWif:      string;
-    contractAddress:    string;
-    tokenAddress:       string;
-    genesisCommitment:  string;
-    depositSats:        number;
-    authorizedSats:     number;
-    intervalBlocks:     number;
-    startBlock:         number;
-    hint:               string;
+    subscriberAddress: string;
+    subscriberWif: string;
+    contractAddress: string;
+    tokenAddress: string;
+    genesisCommitment: string;
+    depositSats: number;
+    authorizedSats: number;
+    intervalBlocks: number;
+    startBlock: number;
+    hint: string;
   }> {
     return post(/* path */ "/subscription/create-session", {});
   },
@@ -161,11 +161,11 @@ export const api = {
    * POST /subscription/auto-fund
    */
   autoFund(params: { contractAddress: string; subscriberWif: string }): Promise<{
-    message:        string;
-    txid:           string;
-    tokenCategory:  string;
+    message: string;
+    txid: string;
+    tokenCategory: string;
     contractAddress: string;
-    depositSats:    string;
+    depositSats: string;
     authorizedSats: string;
     intervalBlocks: number;
   }> {
@@ -181,14 +181,60 @@ export const api = {
   },
 
   /**
-   * Call the subscription-gated premium endpoint.
-   * GET /api/premium/hello  Authorization: Bearer <token>
+   * Call the subscription-gated Router402 data endpoint.
+   * Deducts perCallSats from the subscriber's contract balance server-side.
+   * GET /api/subscription/data   X-Subscription-Token: <tokenCategory>
    */
-  premiumHello(token: string): Promise<{ message: string }> {
-    return get("/api/premium/hello", { Authorization: `Bearer ${token}` });
+  subscriptionData(tokenCategory: string): Promise<{
+    message: string;
+    flow: { step3: string; step4: string };
+    context: {
+      requestId: string;
+      tokenCategory: string;
+      contractAddress: string;
+      costSats: number;
+      remainingBalance: string;
+      pendingSats: string;
+    };
+    data: { price: { BCH: number; USD: number }; block: string; network: string; hint: string };
+  }> {
+    return get("/api/subscription/data", { "X-Subscription-Token": tokenCategory });
   },
 
-  // ─── Raw fetch utilities for demo page ───────────────────────────────────
+  /**
+   * Fetch merchant dashboard (plans, subscriptions, pending earnings, usage).
+   * GET /merchant/dashboard
+   */
+  merchantDashboard(): Promise<{
+    summary: {
+      totalPlans: number;
+      activePlans: number;
+      activeSubscriptions: number;
+      pendingSubscriptions: number;
+      totalContractBalance: string;
+      totalPendingEarnings: string;
+      claimableSubscriptions: number;
+    };
+    plans: Array<{ planId: string; name: string; perCallSats: number; subscriberCount: number; status: string }>;
+    subscriptions: Array<{ contractAddress: string; tokenCategory: string; status: string; balance: string; pendingUsage: string }>;
+    usage: Array<{ tokenCategory: string; pendingSats: string; totalSats: string; recentCallCount: number; lastUsedAt: string }>;
+  }> {
+    return get("/merchant/dashboard");
+  },
+
+  /**
+   * Trigger on-chain claim for all active subscriptions.
+   * POST /merchant/claim-all
+   */
+  merchantClaimAll(): Promise<{
+    message: string;
+    totalClaimedSats: string;
+    results: Array<{ contractAddress: string; tokenCategory: string; status: string; txid?: string; claimedSats?: string; error?: string }>;
+  }> {
+    return post("/merchant/claim-all", {});
+  },
+
+  // ─── Raw fetch utilities ──────────────────────────────────────────────────
 
   raw(method: string, path: string): Promise<Response> {
     return fetch(`${BASE}${path}`, { method });
@@ -198,6 +244,13 @@ export const api = {
     return fetch(`${BASE}${path}`, {
       method,
       headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  rawWithSubToken(method: string, path: string, tokenCategory: string): Promise<Response> {
+    return fetch(`${BASE}${path}`, {
+      method,
+      headers: { "X-Subscription-Token": tokenCategory },
     });
   },
 };

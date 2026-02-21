@@ -1,0 +1,87 @@
+[
+  {
+    "planId": "fc1310fa-8029-47b1-aa68-90de99c7287c",
+    "name": "Pro API Plan",
+    "description": "Premium data access",
+    "authorizedSats": 50000,
+    "intervalBlocks": 5,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:10:55.627Z",
+    "updatedAt": "2026-02-21T08:10:55.627Z"
+  },
+  {
+    "planId": "134624b2-2f2b-4f41-ba90-8e72fa8ce884",
+    "name": "Test Plan",
+    "description": "Unit test plan",
+    "authorizedSats": 20000,
+    "intervalBlocks": 5,
+    "perCallSats": 200,
+    "allowedPaths": [
+      "/api/subscription/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:17:46.814Z",
+    "updatedAt": "2026-02-21T08:17:46.814Z"
+  },
+  {
+    "planId": "e250cbbb-dd11-41ca-91f1-60075eb62dbe",
+    "name": "Lookup Plan",
+    "description": "",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 546,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:17:46.845Z",
+    "updatedAt": "2026-02-21T08:17:46.845Z"
+  },
+  {
+    "planId": "64e139c4-48eb-4dcb-af79-94ffc0943e9e",
+    "authorizedSats": 5000,
+    "intervalBlocks": 144,
+    "perCallSats": 999,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:17:46.883Z",
+    "updatedAt": "2026-02-21T08:17:46.896Z"
+  },
+  {
+    "planId": "58a6de99-2146-4f9d-a9f0-89b5830cd98f",
+    "authorizedSats": 10000,
+    "intervalBlocks": 144,
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "paused",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:17:46.930Z",
+    "updatedAt": "2026-02-21T08:17:46.940Z"
+  },
+  {
+    "planId": "4e98afd9-e5b4-4fc8-a6e6-d7a5fbc2ee5e",
+    "name": "Active Plan",
+    "description": "",
+    "authorizedSats": 30000,
+    "intervalBlocks": 7,
+    "perCallSats": 300,
+    "allowedPaths": [
+      "/api/*"
+    ],
+    "merchantAddress": "bchtest:qpumqqygwcnt999fz3gp5nxjy66ckg6esvmzshj478",
+    "status": "active",
+    "subscriberCount": 0,
+    "createdAt": "2026-02-21T08:17:46.962Z",
+    "updatedAt": "2026-02-21T08:17:46.962Z"
+  }
+]

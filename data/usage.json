@@ -1,0 +1,44 @@
+[
+  {
+    "tokenCategory": "test_active_category_abc123",
+    "contractAddress": "bchtest:testcontractactive",
+    "pendingSats": "546",
+    "totalSats": "546",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T08:17:47.056Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 546,
+        "requestId": "d91fe1f7"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T08:17:47.056Z"
+  },
+  {
+    "tokenCategory": "test_multi_category_xyz789",
+    "contractAddress": "bchtest:testcontractmulti",
+    "pendingSats": "1638",
+    "totalSats": "1638",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-21T08:17:47.090Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 546,
+        "requestId": "a833c5fd"
+      },
+      {
+        "timestamp": "2026-02-21T08:17:47.082Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 546,
+        "requestId": "45e2b25d"
+      },
+      {
+        "timestamp": "2026-02-21T08:17:47.072Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 546,
+        "requestId": "0432912d"
+      }
+    ],
+    "lastUsedAt": "2026-02-21T08:17:47.090Z"
+  }
+]
