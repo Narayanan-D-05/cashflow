@@ -75,8 +75,8 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
   const record = contractAddress
     ? getByAddress(contractAddress)
     : tokenCategory
-    ? getByCategory(tokenCategory)
-    : undefined;
+      ? getByCategory(tokenCategory)
+      : undefined;
 
   if (!record) {
     // Unknown contract — nothing to do
@@ -93,14 +93,14 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
   // If subscription is still pending funding, try to activate it
   if (record.status === 'pending_funding' && tokenCategory) {
     const deployed = instantiateSubscriptionContract({
-      merchantPkhHex:   record.merchantPkh,
+      merchantPkhHex: record.merchantPkh,
       subscriberPkhHex: record.subscriberPkh,
-      intervalBlocks:   record.intervalBlocks,
+      intervalBlocks: record.intervalBlocks,
     });
 
     const result = await verifySubscriptionFunding({
       txid,
-      contractTokenAddress:  deployed.tokenAddress,
+      contractTokenAddress: deployed.tokenAddress,
       expectedTokenCategory: tokenCategory,
       minFundingSats: Number(record.authorizedSats),
     });
@@ -108,8 +108,8 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
     if (result.verified) {
       updateSubscription(record.contractAddress, {
         tokenCategory: tokenCategory,
-        balance:       BigInt(result.amountSats),
-        status:        'active',
+        balance: BigInt(result.amountSats),
+        status: 'active',
       });
       console.log(`[Webhook] Subscription ${record.contractAddress.slice(0, 12)}… ACTIVATED via webhook.`);
     }
@@ -119,13 +119,15 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
   if (record.status === 'active') {
     // Non-blocking balance refresh: query UTXOs
     const deployed = instantiateSubscriptionContract({
-      merchantPkhHex:   record.merchantPkh,
+      merchantPkhHex: record.merchantPkh,
       subscriberPkhHex: record.subscriberPkh,
-      intervalBlocks:   record.intervalBlocks,
+      intervalBlocks: record.intervalBlocks,
     });
 
     try {
-      const utxos   = await deployed.contract.getUtxos();
+      const { getProvider } = await import('../../contracts/deploy.js');
+      const provider = getProvider();
+      const utxos = await provider.getUtxos(deployed.contract.tokenAddress);
       const balance = utxos.reduce((sum, u) => sum + u.satoshis, 0n);
       updateSubscription(record.contractAddress, { balance });
 

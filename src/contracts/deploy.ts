@@ -78,7 +78,7 @@ export function instantiateSubscriptionContract(opts: {
 
   const provider = getProvider();
 
-  const merchantPkh   = Uint8Array.from(Buffer.from(merchantPkhHex,   'hex'));
+  const merchantPkh = Uint8Array.from(Buffer.from(merchantPkhHex, 'hex'));
   const subscriberPkh = Uint8Array.from(Buffer.from(subscriberPkhHex, 'hex'));
 
   const contract = new Contract(
@@ -88,8 +88,8 @@ export function instantiateSubscriptionContract(opts: {
   );
 
   return {
-    contractAddress:  contract.address,
-    tokenAddress:     contract.tokenAddress,
+    contractAddress: contract.address,
+    tokenAddress: contract.tokenAddress,
     contract,
     merchantPkhHex,
     subscriberPkhHex,
@@ -129,22 +129,22 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
   newLastClaimBlock: number;
   newBalance: bigint;
 }> {
-  const provider   = getProvider();
+  const provider = getProvider();
   const merchantKp = wifToKeyPair(getMerchantWif());
 
   const { merchantPkh, subscriberPkh, intervalBlocks } = record;
 
   // Re-instantiate the contract to get the correct address + unlock functions
   const { contract } = instantiateSubscriptionContract({
-    merchantPkhHex:   merchantPkh,
+    merchantPkhHex: merchantPkh,
     subscriberPkhHex: subscriberPkh,
     intervalBlocks,
   });
 
-  // Fetch contract UTXOs
-  const utxos = await contract.getUtxos();
+  // Fetch contract UTXOs (explicitly from tokenAddress where the NFT lives)
+  const utxos = await provider.getUtxos(contract.tokenAddress);
   if (utxos.length === 0) {
-    throw new Error(`No UTXOs found at contract address ${contract.address}`);
+    throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);
   }
 
   // Find the UTXO carrying the subscription mutable NFT
@@ -170,9 +170,9 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
     );
   }
 
-  const MINER_FEE    = 1500n;
-  const claimedSats  = BigInt(authorizedSats);
-  const inputValue   = contractUtxo.satoshis;
+  const MINER_FEE = 1500n;
+  const claimedSats = BigInt(authorizedSats);
+  const inputValue = contractUtxo.satoshis;
   const returnToContract = inputValue - claimedSats - MINER_FEE;
 
   if (returnToContract < 0n) {
@@ -186,7 +186,7 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
 
   // Build the claim transaction
   const sigTemplate = new SignatureTemplate(merchantKp.privateKey);
-  const unlocker    = contract.unlock.claim(merchantKp.publicKey, sigTemplate);
+  const unlocker = contract.unlock.claim(merchantKp.publicKey, sigTemplate);
 
   const txBuilder = new TransactionBuilder({ provider });
 
@@ -195,10 +195,10 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
 
   // Output 0: contract self-output with updated NFT
   txBuilder.addOutput({
-    to:     contract.tokenAddress,
+    to: contract.tokenAddress,
     amount: returnToContract,
-    token:  {
-      amount:   0n,
+    token: {
+      amount: 0n,
       category: record.tokenCategory,
       nft: {
         capability: 'mutable',
@@ -209,17 +209,17 @@ export async function buildAndSendClaimTx(record: SubscriptionRecord): Promise<{
 
   // Output 1: merchant receives authorized payment
   txBuilder.addOutput({
-    to:     record.merchantAddress,
+    to: record.merchantAddress,
     amount: claimedSats,
   });
 
   const txDetails = await txBuilder.send();
 
   return {
-    txid:              txDetails.txid,
+    txid: txDetails.txid,
     claimedSats,
     newLastClaimBlock: currentBlock,
-    newBalance:        returnToContract,
+    newBalance: returnToContract,
   };
 }
 
@@ -240,18 +240,18 @@ export async function buildAndSendCancelTx(
   record: SubscriptionRecord,
   subscriberWif: string,
 ): Promise<{ txid: string; refundedSats: bigint }> {
-  const provider    = getProvider();
+  const provider = getProvider();
   const subscriberKp = wifToKeyPair(subscriberWif);
 
   const { contract } = instantiateSubscriptionContract({
-    merchantPkhHex:   record.merchantPkh,
+    merchantPkhHex: record.merchantPkh,
     subscriberPkhHex: record.subscriberPkh,
-    intervalBlocks:   record.intervalBlocks,
+    intervalBlocks: record.intervalBlocks,
   });
 
-  const utxos = await contract.getUtxos();
+  const utxos = await provider.getUtxos(contract.tokenAddress);
   if (utxos.length === 0) {
-    throw new Error(`No UTXOs found at contract address ${contract.address}`);
+    throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);
   }
 
   const contractUtxo = utxos.find(
@@ -259,17 +259,17 @@ export async function buildAndSendCancelTx(
   ) ?? utxos[0];
 
   const MINER_FEE = 1500n;
-  const refunded  = contractUtxo.satoshis - MINER_FEE;
+  const refunded = contractUtxo.satoshis - MINER_FEE;
 
   const sigTemplate = new SignatureTemplate(subscriberKp.privateKey);
-  const unlocker    = contract.unlock.cancel(subscriberKp.publicKey, sigTemplate);
+  const unlocker = contract.unlock.cancel(subscriberKp.publicKey, sigTemplate);
 
   const txBuilder = new TransactionBuilder({ provider });
   txBuilder.addInput(contractUtxo, unlocker);
 
   // Return all BCH to subscriber; omit token from output → NFT destroyed
   txBuilder.addOutput({
-    to:     record.subscriberAddress,
+    to: record.subscriberAddress,
     amount: refunded,
   });
 
