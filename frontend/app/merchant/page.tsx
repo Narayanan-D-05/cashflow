@@ -1,207 +1,261 @@
+"use client";
+
+import { useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import CursorGlow from "@/components/cursor-glow";
-import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Zap, Shield, Code, Server, Wallet } from 'lucide-react';
+import { api } from "@/lib/api";
+import {
+    CheckCircle2,
+    Loader2,
+    AlertTriangle,
+    Copy,
+    Check,
+    TrendingUp,
+    Coins,
+    Server,
+    Zap
+} from "lucide-react";
 
-export default function MerchantDoc() {
+// Helper components
+function CopyBtn({ value }: { value: string }) {
+    const [copied, setCopied] = useState(false);
+    function copy() {
+        navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }
+    return (
+        <button
+            onClick={copy}
+            className="shrink-0 p-1.5 rounded-lg hover:bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] hover:text-[var(--color-brand)] transition-all"
+            title="Copy"
+        >
+            {copied
+                ? <Check className="w-3.5 h-3.5 text-[var(--color-success)]" />
+                : <Copy className="w-3.5 h-3.5" />}
+        </button>
+    );
+}
+
+function MonoRow({ label, value, dimValue }: { label: string; value: string; dimValue?: boolean }) {
+    return (
+        <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-faint)]">{label}</span>
+            <div className="flex items-center gap-1 bg-[var(--color-surface-alt)] rounded-xl px-3 py-2">
+                <code className={`flex-1 text-xs font-mono break-all ${dimValue ? "text-[var(--color-text-muted)]" : "text-[var(--color-text)]"}`}>
+                    {value}
+                </code>
+                <CopyBtn value={value} />
+            </div>
+        </div>
+    );
+}
+
+export default function MerchantDashboard() {
+    const [contractAddress, setContractAddress] = useState("");
+    const [tokenCategory, setTokenCategory] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [claimData, setClaimData] = useState<{ txid: string, claimedSats: string, newBalance: string } | null>(null);
+
+    const [batchLoading, setBatchLoading] = useState(false);
+    const [batchResult, setBatchResult] = useState<any>(null);
+
+    const runClaim = async () => {
+        if (!contractAddress || !tokenCategory) return;
+        setLoading(true);
+        setErrorMsg(null);
+        setClaimData(null);
+
+        try {
+            const data = await api.claimSubscription(contractAddress, tokenCategory) as any;
+            setClaimData(data);
+        } catch (e) {
+            setErrorMsg(String(e));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const runBatchClaim = async () => {
+        setBatchLoading(true);
+        setErrorMsg(null);
+        setBatchResult(null);
+
+        try {
+            const data = await api.merchantClaimAll();
+            setBatchResult(data);
+        } catch (e) {
+            setErrorMsg(String(e));
+        } finally {
+            setBatchLoading(false);
+        }
+    };
+
     return (
         <div className="relative min-h-screen flex flex-col font-sans text-white bg-[var(--color-bg)]">
             <CursorGlow />
             <Header />
 
-            <main className="flex-1 flex w-full max-w-7xl mx-auto px-4 md:px-8 pt-24 pb-16 gap-8">
+            <main className="flex-1 flex w-full max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-16 gap-8 animate-fade-in-up">
 
-                {/* Left Sidebar Navigation */}
-                <aside className="hidden lg:block w-64 shrink-0">
-                    <div className="sticky top-24 space-y-6">
-                        <Link href="/" className="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)] hover:text-white transition-colors mb-4">
-                            <ArrowLeft className="w-4 h-4" />
-                            Back to Home
-                        </Link>
-
-                        <nav className="space-y-1">
-                            <p className="text-xs font-semibold text-[var(--color-text-muted)] tracking-wider uppercase mb-3">Getting Started</p>
-                            <a href="#overview" className="block py-1.5 text-sm text-white font-medium hover:text-[var(--color-brand)] transition-colors">Overview</a>
-                            <a href="#why" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Why CashFlow402?</a>
-                            <a href="#how-it-works" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">How It Works</a>
-
-                            <p className="text-xs font-semibold text-[var(--color-text-muted)] tracking-wider uppercase mt-8 mb-3">Integration Guide</p>
-                            <a href="#setup" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Wallet & Network</a>
-                            <a href="#plans" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Configuring Plans</a>
-                            <a href="#router402" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Router402 Middleware</a>
-                            <a href="#claims" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Batch Claims</a>
-
-                            <p className="text-xs font-semibold text-[var(--color-text-muted)] tracking-wider uppercase mt-8 mb-3">Management</p>
-                            <a href="#security" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Security & JWT</a>
-                            <a href="#revenue" className="block py-1.5 text-sm text-gray-400 hover:text-white transition-colors">Revenue & Fees</a>
-                        </nav>
-                    </div>
-                </aside>
-
-                {/* Content Area */}
-                <article className="flex-1 min-w-0 max-w-3xl space-y-12 animate-fade-in-up">
-
-                    <section id="overview" className="space-y-4">
+                <div className="flex-1 space-y-10">
+                    <section>
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase tracking-widest text-[var(--color-brand)] bg-[var(--color-brand)]/10 border border-[var(--color-brand)]/20 rounded-full mb-4">
-                            <Code className="w-3.5 h-3.5" /> Merchant Guide
+                            <Server className="w-3.5 h-3.5" /> Merchant Dashboard
                         </div>
                         <h1 className="text-4xl md:text-5xl font-bold font-[var(--font-space-grotesk)] text-gradient tracking-tight">
-                            Integrating CashFlow402
+                            Claim Funds
                         </h1>
-                        <p className="text-lg text-[var(--color-text-muted)] leading-relaxed">
-                            This guide is for AI developers, SaaS founders, and creators who want to accept native, instant, and frictionless crypto micropayments using HTTP 402 and Bitcoin Cash (BCH). No deep blockchain experience is required.
+                        <p className="text-lg text-[var(--color-text-muted)] mt-2 leading-relaxed">
+                            Trigger on-chain claims to pull earned BCH from your active subscription active smart contracts directly into your secure backend merchant wallet.
                         </p>
                     </section>
 
-                    <section id="why" className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">Why CashFlow402?</h2>
+                    {errorMsg && (
+                        <div className="glass rounded-xl p-4 border border-[var(--color-error)]/30 text-[var(--color-error)] text-xs font-mono break-all">
+                            <div className="flex items-center gap-2 mb-1 font-semibold text-sm">
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> Error
+                            </div>
+                            {errorMsg}
+                        </div>
+                    )}
 
-                        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-[var(--color-bg-elevated)] text-[var(--color-text-faint)] uppercase text-xs">
-                                    <tr>
-                                        <th className="px-6 py-4 font-semibold">Feature</th>
-                                        <th className="px-6 py-4 font-semibold">Traditional (Stripe)</th>
-                                        <th className="px-6 py-4 font-semibold text-[var(--color-brand)]">CashFlow402</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[var(--color-border)]">
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium">Transaction Fee</td>
-                                        <td className="px-6 py-4 text-[var(--color-text-muted)]">2.9% + $0.30</td>
-                                        <td className="px-6 py-4 text-white font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[var(--color-brand)]" />Fraction of a cent</td>
-                                    </tr>
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium">Chargebacks</td>
-                                        <td className="px-6 py-4 text-[var(--color-text-muted)]">Yes (High risk)</td>
-                                        <td className="px-6 py-4 text-white font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[var(--color-brand)]" />None (Immutable)</td>
-                                    </tr>
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium">Micro-Tx Usability</td>
-                                        <td className="px-6 py-4 text-red-400">Unprofitable &lt; $1.00</td>
-                                        <td className="px-6 py-4 text-[var(--color-brand)] font-bold flex items-center gap-2"><Zap className="w-4 h-4" />Profitable &lt; $0.001</td>
-                                    </tr>
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium">Settlement</td>
-                                        <td className="px-6 py-4 text-[var(--color-text-muted)]">2–7 business days</td>
-                                        <td className="px-6 py-4 text-white font-semibold">Instant (On-chain)</td>
-                                    </tr>
-                                    <tr className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-medium">Privacy</td>
-                                        <td className="px-6 py-4 text-[var(--color-text-muted)]">Full PII required</td>
-                                        <td className="px-6 py-4 text-white font-semibold">Wallet Address Only</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {/* Single Claim Card */}
+                        <div className="glass rounded-2xl p-6 border border-[var(--glass-border)]">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Coins className="w-5 h-5 text-[var(--color-brand)]" />
+                                <h3 className="font-semibold text-lg">Single Claim</h3>
+                            </div>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-5">
+                                Specify exact contract info to claim an individual subscription.
+                            </p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs uppercase tracking-widest text-[var(--color-text-faint)] block mb-1">Contract Address</label>
+                                    <input
+                                        type="text"
+                                        value={contractAddress}
+                                        onChange={e => setContractAddress(e.target.value)}
+                                        placeholder="p2sh..."
+                                        className="w-full bg-[var(--color-surface-alt)] border border-[var(--glass-border)] rounded-xl px-4 py-2 text-sm text-white focus:border-[var(--color-brand)] focus:outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs uppercase tracking-widest text-[var(--color-text-faint)] block mb-1">Token Category</label>
+                                    <input
+                                        type="text"
+                                        value={tokenCategory}
+                                        onChange={e => setTokenCategory(e.target.value)}
+                                        placeholder="Hex token id"
+                                        className="w-full bg-[var(--color-surface-alt)] border border-[var(--glass-border)] rounded-xl px-4 py-2 text-sm text-white focus:border-[var(--color-brand)] focus:outline-none transition-colors"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={runClaim}
+                                    disabled={loading || !contractAddress || !tokenCategory}
+                                    className="w-full flex justify-center items-center gap-2 py-2.5 rounded-xl text-sm font-semibold
+                                        bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)]
+                                        hover:bg-[var(--color-brand-light)] disabled:opacity-40 transition-all shadow-sm"
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+                                    Trigger Single Claim
+                                </button>
+                            </div>
+
+                            {claimData && (
+                                <div className="mt-5 flex flex-col gap-3 animate-fade-in border-t border-[var(--glass-border)] pt-5">
+                                    <div className="flex items-center gap-2 text-[var(--color-success)] mb-2">
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        <span className="font-semibold text-sm">Claim Successful</span>
+                                    </div>
+                                    <MonoRow label="Claim txid" value={claimData.txid} />
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                        <div className="bg-[var(--color-surface-alt)] rounded-xl p-3">
+                                            <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">Claimed Amount</p>
+                                            <p className="text-sm md:text-base font-bold font-mono text-[var(--color-success)] mt-0.5">
+                                                {Number(claimData.claimedSats).toLocaleString()} sats
+                                            </p>
+                                        </div>
+                                        <div className="bg-[var(--color-surface-alt)] rounded-xl p-3">
+                                            <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">Remaining Balance</p>
+                                            <p className="text-sm md:text-base font-bold font-mono text-[var(--color-brand)] mt-0.5">
+                                                {claimData.newBalance} sats
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="bg-[var(--color-brand)]/5 border border-[var(--color-brand)]/20 p-5 rounded-xl">
-                            <h3 className="text-[var(--color-brand)] font-bold mb-2">Who is this for?</h3>
-                            <ul className="list-disc pl-5 space-y-1 text-sm text-[var(--color-text-muted)]">
-                                <li><strong className="text-white">AI Agents &amp; LLMs:</strong> Charge exact fractions of a cent per prompt or per inference chunk.</li>
-                                <li><strong className="text-white">Crypto APIs:</strong> Rate-limit and monetize endpoints without asking for credit cards.</li>
-                                <li><strong className="text-white">Paywall Content:</strong> Let users read articles or stream video securely.</li>
-                            </ul>
-                        </div>
-                    </section>
+                        {/* Batch Claim Card */}
+                        <div className="glass rounded-2xl p-6 border border-[var(--glass-border)] flex flex-col">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Zap className="w-5 h-5 text-[var(--color-brand)]" />
+                                <h3 className="font-semibold text-lg">Batch Claim All</h3>
+                            </div>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-5">
+                                Automatically iterate through all active subscription contracts and simultaneously claim all pending satoshis globally.
+                            </p>
 
-                    <section id="how-it-works" className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">How It Works</h2>
-
-                        <div className="grid sm:grid-cols-2 gap-6">
-                            <div className="p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-brand)]/50 transition-colors">
-                                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[var(--color-brand)] text-black flex items-center justify-center text-xs">1</span>
-                                    The Subscriber
-                                </h3>
-                                <p className="text-sm text-[var(--color-text-muted)] space-y-2">
-                                    They visit your site and create a local session. They fund a unique temporary address with a small amount of BCH (e.g. $2.00).
-                                    <br /><br />
-                                    A smart contract (covenant) and a CashToken NFT are minted. They get instant, frictionless access to your API without needing wallet popups for every single click.
+                            <div className="mt-auto">
+                                <button
+                                    onClick={runBatchClaim}
+                                    disabled={batchLoading}
+                                    className="w-full flex justify-center items-center gap-2 py-2.5 rounded-xl text-sm font-semibold mb-2
+                                        border border-[var(--color-brand)] text-[var(--color-brand)]
+                                        hover:bg-[var(--color-brand)]/10 disabled:opacity-40 transition-all shadow-sm"
+                                >
+                                    {batchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                    Execute Batch Claim
+                                </button>
+                                <p className="text-center text-[10px] text-[var(--color-text-faint)] mt-2">
+                                    Calls endpoint: POST /merchant/claim-all
                                 </p>
                             </div>
 
-                            <div className="p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-brand)]/50 transition-colors">
-                                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[var(--color-brand)] text-black flex items-center justify-center text-xs">2</span>
-                                    The Merchant
-                                </h3>
-                                <p className="text-sm text-[var(--color-text-muted)] space-y-2">
-                                    Instead of tracking thousands of micro-transactions, you rely on the HTTP 402 middleware to track their off-chain satoshi spend.
-                                    <br /><br />
-                                    At predefined intervals (e.g. daily), your server submits one "Batch Claim" transaction, instantly pulling all earned BCH from their Smart Contracts straight to your securely unexposed wallet.
-                                </p>
-                            </div>
+                            {batchResult && (
+                                <div className="mt-5 flex flex-col gap-3 animate-fade-in border-t border-[var(--glass-border)] pt-5">
+                                    <div className="flex items-center gap-2 text-[var(--color-success)] mb-2">
+                                        <CheckCircle2 className="w-5 h-5" />
+                                        <span className="font-semibold text-sm">Batch Complete</span>
+                                    </div>
+                                    <div className="bg-[var(--color-surface-alt)] rounded-xl p-3 mb-2">
+                                        <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">Total Sats Swept To Merchant Wallet</p>
+                                        <p className="text-lg font-bold font-mono text-[var(--color-success)] mt-0.5">
+                                            {Number(batchResult.totalClaimedSats || 0).toLocaleString()} sats
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-[var(--color-text-muted)]">{batchResult.message}</p>
+
+                                    {batchResult.results && batchResult.results.length > 0 && (
+                                        <div className="mt-2 space-y-2 max-h-40 overflow-y-auto pr-1">
+                                            <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-faint)]">Log Details</p>
+                                            {batchResult.results.map((r: any, i: number) => (
+                                                <div key={i} className="text-xs bg-black/40 p-2 rounded border border-[var(--glass-border)]">
+                                                    <span className="text-[10px] text-gray-400 font-mono block mb-1">{r.tokenCategory.substring(0, 12)}...</span>
+                                                    {r.status === "claimed" ? (
+                                                        <span className="text-[var(--color-success)]">+ {r.claimedSats} sats</span>
+                                                    ) : r.status === "error" ? (
+                                                        <span className="text-[var(--color-error)] text-[10px]">Error: {r.error}</span>
+                                                    ) : (
+                                                        <span className="text-[var(--color-text-muted)]">Status: {r.status}</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    </section>
+                    </div>
 
-                    <section id="setup" className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">Step 1: Get a Merchant Wallet</h2>
-                        <p className="text-[var(--color-text-muted)] text-sm">
-                            You need a Bitcoin Cash (BCH) wallet address to receive payments. When deploying the server, this is controlled entirely by a private WIF (Wallet Import Format) string in your environment variables.
-                        </p>
-                        <div className="p-4 bg-black/50 border border-[var(--color-border)] rounded-xl font-mono text-xs text-[#00ffcc] overflow-x-auto">
-                            <span className="text-gray-500"># .env configuration</span><br />
-                            BCH_NETWORK=chipnet<br />
-                            MERCHANT_WIF=cRYPToR4Nd0mS3cr3TK3y...<br />
-                        </div>
-                        <p className="text-sm text-yellow-500/80 bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20">
-                            <Shield className="inline-block w-4 h-4 mr-2 -mt-1" />
-                            <strong>Crucial:</strong> All payments are settled securely to the address derived from this key. Keep your WIF completely offline and hidden in server secrets.
-                        </p>
-                    </section>
-
-                    <section id="router402" className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">Step 2: Router402 Middleware</h2>
-                        <p className="text-[var(--color-text-muted)] text-sm">
-                            CashFlow402 ships with an Express Node.js router that intercepts HTTP calls. When a user queries your data but hasn't paid, it responds with <code className="text-[var(--color-brand)]">HTTP 402 Payment Required</code>.
-                            Once funded, they receive a JWT token. Each API call seamlessly deducts sats from their contract's tracked balance.
-                        </p>
-                        <div className="p-4 bg-black/50 border border-[var(--color-border)] rounded-xl font-mono text-xs text-[#00ffcc] overflow-x-auto">
-                            import {'{'} router402 {'}'} from '@cashflow402/sdk';<br /><br />
-                            <span className="text-gray-500">// Protect this route—costs 546 sats per ping!</span><br />
-                            app.get('/api/ai/generate', router402(546), async (req, res) =&gt; {'{'}<br />
-                            &nbsp;&nbsp;res.json({'{'} data: "Here is your premium generated text." {'}'});<br />
-                            {'}'});
-                        </div>
-                    </section>
-
-                    <section id="claims" className="space-y-6">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">Step 3: Batch Claims</h2>
-                        <p className="text-[var(--color-text-muted)] text-sm">
-                            You don't need massive infrastructure. The CashFlow402 smart contract inherently verifies the time intervals mathematically on the blockchain. Triggering the Claim engine is a simple API post.
-                        </p>
-                        <div className="flex bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-1 rounded-lg inline-flex mb-2">
-                            <code className="px-3 py-1 text-sm font-mono text-purple-400">POST /merchant/claim-all</code>
-                        </div>
-                        <p className="text-[var(--color-text-muted)] text-sm">
-                            The backend will automatically iterate through all active user contracts, sign the required transactions, verify the mutable CashTokens, and extract your earned BCH directly to your merchant wallet.
-                        </p>
-                    </section>
-
-                    <section id="security" className="space-y-6 pb-24">
-                        <h2 className="text-2xl font-bold text-white border-b border-[var(--color-border)] pb-2">Security & Privacy</h2>
-
-                        <div className="space-y-4">
-                            <div className="p-5 border border-[var(--color-border)] rounded-xl bg-gradient-to-br from-[var(--color-bg-card)] to-[var(--color-bg)]">
-                                <h4 className="font-bold flex items-center gap-2 mb-2"><Server className="w-4 h-4 text-[var(--color-brand)]" /> Stateless JWT Auth</h4>
-                                <p className="text-sm text-[var(--color-text-muted)]">
-                                    Instead of forcing the user to cryptographically sign every single API call externally with MetaMask/Paytaca (which ruins UX),
-                                    CashFlow issuing a time-limited verifiable JWT allows millisecond latency for heavy API usage.
-                                </p>
-                            </div>
-
-                            <div className="p-5 border border-[var(--color-border)] rounded-xl bg-gradient-to-br from-[var(--color-bg-card)] to-[var(--color-bg)]">
-                                <h4 className="font-bold flex items-center gap-2 mb-2"><Wallet className="w-4 h-4 text-[var(--color-brand)]" /> Non-Custodial Covenants</h4>
-                                <p className="text-sm text-[var(--color-text-muted)]">
-                                    The CashFlow402 Smart Contract uses CashScript to ensure that funds can <strong>only</strong> be moved to the Merchant's predefined address, or returned to the Subscriber. It is mathematically impossible for an attacker hacking the routing server to steal the funds or redirect them elsewhere.
-                                </p>
-                            </div>
-                        </div>
-                    </section>
-
-                </article>
+                </div>
             </main>
 
             <Footer />

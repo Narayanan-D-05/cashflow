@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/demo", label: "Per-call Demo" },
   { href: "/subscription", label: "Subscription" },
-  { href: "/merchant", label: "Merchant Guide" },
+  { href: "/merchant", label: "Merchant Dashboard" },
   { href: "http://localhost:3000/docs", label: "API Docs", external: true },
 ];
 
@@ -28,8 +28,8 @@ export default function Header() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled || menuOpen
-          ? "glass border-b border-[var(--color-border)]"
-          : "bg-transparent"
+        ? "glass border-b border-[var(--color-border)]"
+        : "bg-transparent"
         }`}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -63,8 +63,8 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-all duration-200 ${active
-                    ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
+                  ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
                   }`}
               >
                 {link.label}
@@ -104,8 +104,8 @@ export default function Header() {
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
                 className={`px-3 py-2 rounded-lg text-sm transition-all ${pathname === link.href
-                    ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
+                  ? "text-[var(--color-brand)] bg-[var(--color-brand-glow)]"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-brand)] hover:bg-[var(--color-surface-alt)]"
                   }`}
               >
                 {link.label}

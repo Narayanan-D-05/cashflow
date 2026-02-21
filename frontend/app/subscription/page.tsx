@@ -319,11 +319,10 @@ export default function SubscriptionPage() {
                             CashFlow402 · Live on ChipNet
                         </div>
                         <h1 className="text-3xl font-bold font-[var(--font-space-grotesk)] text-gradient mb-2">
-                            Subscription Flow
+                            Subscription Funding
                         </h1>
                         <p className="text-[var(--color-text-muted)] text-sm leading-relaxed">
-                            Real end-to-end 5-step subscription backed by a CashScript covenant on Bitcoin Cash ChipNet.
-                            Every API call hits the live backend — no mocks, no simulations.
+                            Fund your contract to unlock the AI agent without trusting the merchant. You control your funds.
                         </p>
                     </div>
 
@@ -498,142 +497,10 @@ export default function SubscriptionPage() {
                         </StepCard>
 
                         {/* ── STEP 4 ───────────────────────────────────────────────────── */}
-                        <StepCard number={4} title="Call Subscription API" subtitle="GET /api/subscription/data — Router402 deducts sats per call from contract balance" status={s4} icon={Play}>
-                            {fundData ? (
-                                <>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <button
-                                            onClick={runStep4}
-                                            disabled={s4 === "running"}
-                                            className="flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold
-                                 bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)]
-                                 hover:bg-[var(--color-brand-light)]
-                                 disabled:opacity-40 disabled:cursor-not-allowed
-                                 transition-all duration-200 glow-sm hover:glow-md"
-                                        >
-                                            {s4 === "running" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                                            {s4 === "running" ? "Calling…" : "Call API"}
-                                        </button>
-                                        {callCount > 0 && (
-                                            <button
-                                                onClick={runStep4}
-                                                disabled={s4 === "running"}
-                                                className="flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold
-                                   border border-[var(--color-border)] text-[var(--color-text-muted)]
-                                   hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)]
-                                   disabled:opacity-40 transition-all"
-                                            >
-                                                <RefreshCw className="w-3 h-3" /> Call again ({callCount}× so far)
-                                            </button>
-                                        )}
-                                    </div>
 
-                                    {apiData && (
-                                        <div className="flex flex-col gap-3 animate-fade-in">
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {[
-                                                    { label: "Cost This Call", value: `${apiData.context.costSats} sats` },
-                                                    { label: "Remaining Balance", value: `${apiData.context.remainingBalance} sats` },
-                                                    { label: "Pending (unclaimed)", value: `${apiData.context.pendingSats} sats` },
-                                                    { label: "Calls Made", value: `${callCount}` },
-                                                ].map(({ label, value }) => (
-                                                    <div key={label} className="bg-[var(--color-surface-alt)] rounded-xl p-3">
-                                                        <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">{label}</p>
-                                                        <p className="text-base font-bold font-mono text-[var(--color-brand)] mt-0.5">{value}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="bg-[var(--color-surface-alt)] rounded-xl p-3">
-                                                <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)] mb-1">Server Response</p>
-                                                <p className="text-xs text-[var(--color-success)] font-medium">{apiData.message}</p>
-                                                <p className="text-[10px] text-[var(--color-text-faint)] font-mono mt-1">{apiData.flow.step4}</p>
-                                            </div>
-                                            <p className="text-[10px] text-[var(--color-text-faint)]">
-                                                Request ID: <code className="font-mono">{apiData.context.requestId}</code>
-                                            </p>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <p className="text-xs text-[var(--color-text-faint)]">Complete Step 3 first.</p>
-                            )}
-                        </StepCard>
-
-                        {/* ── STEP 5 ───────────────────────────────────────────────────── */}
-                        <StepCard number={5} title="Merchant Claim" subtitle="POST /subscription/claim — builds &amp; broadcasts on-chain claim transaction" status={s5} icon={Coins}>
-                            {session ? (
-                                <>
-                                    <button
-                                        onClick={runStep5}
-                                        disabled={s5 === "running" || s5 === "done"}
-                                        className="flex items-center gap-2 py-2.5 px-5 rounded-xl text-sm font-semibold mb-4
-                               bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)]
-                               hover:bg-[var(--color-brand-light)]
-                               disabled:opacity-40 disabled:cursor-not-allowed
-                               transition-all duration-200 glow-sm hover:glow-md"
-                                    >
-                                        {s5 === "running" ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
-                                        {s5 === "running" ? "Claiming…" : s5 === "done" ? "Claimed ✓" : "Claim Payments"}
-                                    </button>
-
-                                    {claimData && (
-                                        <div className="flex flex-col gap-3 animate-fade-in">
-                                            <MonoRow label="Claim txid" value={claimData.txid} />
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-[var(--color-surface-alt)] rounded-xl p-3">
-                                                    <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">Claimed</p>
-                                                    <p className="text-base font-bold font-mono text-[var(--color-success)] mt-0.5">
-                                                        {Number(claimData.claimedSats).toLocaleString()} sats
-                                                    </p>
-                                                </div>
-                                                <div className="bg-[var(--color-surface-alt)] rounded-xl p-3">
-                                                    <p className="text-[9px] uppercase tracking-widest text-[var(--color-text-faint)]">Remaining</p>
-                                                    <p className="text-base font-bold font-mono text-[var(--color-brand)] mt-0.5">
-                                                        {claimData.newBalance} sats
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <a
-                                                href={`https://chipnet.imaginary.cash/tx/${claimData.txid}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
-                                   border border-[var(--color-border)] text-[var(--color-text-muted)]
-                                   hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)] transition-all w-fit"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5" /> View claim tx on explorer
-                                            </a>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <p className="text-xs text-[var(--color-text-faint)]">Complete Step 1 first.</p>
-                            )}
-                        </StepCard>
 
                     </div>
 
-                    {/* ── Flow complete ──────────────────────────────────────────────── */}
-                    {s5 === "done" && (
-                        <div className="mt-6 glass rounded-2xl p-6 border border-[var(--color-success)]/30 animate-fade-in-up">
-                            <div className="flex items-center gap-3 mb-3">
-                                <CheckCircle2 className="w-6 h-6 text-[var(--color-success)]" />
-                                <h3 className="font-bold text-[var(--color-success)]">All 5 Steps Complete</h3>
-                            </div>
-                            <p className="text-sm text-[var(--color-text-muted)]">
-                                You just ran a full CashFlow402 subscription cycle on ChipNet:{" "}
-                                <span className="text-[var(--color-text)]">covenant deployed → funded on-chain → API called with per-call deduction → merchant claimed BCH.</span>
-                            </p>
-                            <button
-                                onClick={clearSession}
-                                className="mt-4 flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold
-                           border border-[var(--color-border)] text-[var(--color-text-muted)]
-                           hover:border-[var(--color-brand)]/40 hover:text-[var(--color-brand)] transition-all"
-                            >
-                                <RefreshCw className="w-4 h-4" /> Start Over
-                            </button>
-                        </div>
-                    )}
 
                     {/* ── Legend ─────────────────────────────────────────────────────── */}
                     <div className="mt-8 glass rounded-2xl p-4 animate-fade-in-up delay-200">
@@ -643,8 +510,6 @@ export default function SubscriptionPage() {
                                 ["POST", "/subscription/create-session", "Server generates keypair, deploys CashScript covenant"],
                                 ["–", "tbch.googol.cash faucet", "You fund subscriber address with ChipNet tBCH"],
                                 ["POST", "/subscription/auto-fund", "Server builds genesis UTXO + broadcasts on ChipNet"],
-                                ["GET", "/api/subscription/data", "Router402 middleware deducts sats per call"],
-                                ["POST", "/subscription/claim", "Server builds claim tx + broadcasts on ChipNet"],
                             ].map(([method, path, desc]) => (
                                 <div key={path} className="flex items-start gap-2 text-xs">
                                     <code className={`shrink-0 font-mono font-bold text-[10px] px-1.5 py-0.5 rounded ${method === "GET" ? "bg-[var(--color-info)]/15 text-[var(--color-info)]" :
