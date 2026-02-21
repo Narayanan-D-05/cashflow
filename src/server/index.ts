@@ -12,14 +12,16 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import { paymentRouter }      from './routes/payment.js';
+import { paymentRouter } from './routes/payment.js';
 import { subscriptionRouter } from './routes/subscription.js';
-import { webhookRouter }      from './routes/webhook.js';
-import { require402 }         from './middleware/require402.js';
-import { connectElectrum }    from '../services/electrumService.js';
-import { openApiSpec }        from './openapi.js';
+import { webhookRouter } from './routes/webhook.js';
+import { merchantRouter } from './routes/merchant.js';
+import { require402 } from './middleware/require402.js';
+import { requireSubscription } from './middleware/requireSubscription.js';
+import { connectElectrum } from '../services/electrumService.js';
+import { openApiSpec } from './openapi.js';
 
-const app  = express();
+const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
 
 // ─── Global Middleware ────────────────────────────────────────────────────────
@@ -66,6 +68,9 @@ app.use('/', paymentRouter);
 // Subscription lifecycle
 app.use('/', subscriptionRouter);
 
+// Merchant plan management (Step 1 + Step 5)
+app.use('/', merchantRouter);
+
 // Webhooks
 app.use('/', webhookRouter);
 
@@ -73,14 +78,14 @@ app.use('/', webhookRouter);
 
 /**
  * GET /api/premium/hello
- * A token-gated demo endpoint.  Hitting it without a valid payment token
- * returns a 402 with a payment challenge.
+ * A token-gated demo endpoint (per-call / one-time pay model).
+ * Hitting it without a valid payment token returns 402 with a payment challenge.
  */
 app.get('/api/premium/hello', require402, (req, res) => {
   res.json({
     message: 'You have paid for this API call via BCH!',
     data: {
-      greeting:  'Welcome to CashFlow402 — BCH-powered API monetization.',
+      greeting: 'Welcome to CashFlow402 — BCH-powered API monetization.',
       timestamp: new Date().toISOString(),
     },
   });
@@ -88,15 +93,97 @@ app.get('/api/premium/hello', require402, (req, res) => {
 
 /**
  * GET /api/premium/data
- * Another demo protected endpoint.
+ * Another demo protected endpoint (per-call).
  */
 app.get('/api/premium/data', require402, (req, res) => {
   res.json({
     message: 'Paid API data endpoint',
     data: {
-      price:   { BCH: 1, USD: 380 },
-      block:   'latest',
+      price: { BCH: 1, USD: 380 },
+      block: 'latest',
       network: process.env['BCH_NETWORK'] ?? 'chipnet',
+    },
+  });
+});
+
+// ─── Subscription (Router402) Protected API ─────────────────────────────────
+// Steps 3 + 4: Client calls API → Router checks sub status → Deducts sats per call
+
+/**
+ * GET /api/subscription/data
+ *
+ * Subscription-gated endpoint using the Router402 pattern.
+ * Requires X-Subscription-Token: <tokenCategory> header (or Bearer JWT).
+ * Per call, the router deducts `DEFAULT_PERCALL_RATE_SATS` from the subscriber's
+ * tracked balance.  Accumulated sats are claimed by the merchant via
+ * POST /subscription/claim or POST /merchant/claim-all.
+ */
+app.get('/api/subscription/data', requireSubscription(), (req, res) => {
+  const ctx = req.subscriptionContext!;
+  res.json({
+    message: '✅ Subscription-gated API call succeeded (Router402 deduction applied).',
+    flow: {
+      step3: 'Router checked subscription status → active',
+      step4: `Router deducted ${ctx.costSats} sats from contract balance`,
+    },
+    context: {
+      requestId: ctx.requestId,
+      tokenCategory: ctx.tokenCategory.slice(0, 12) + '…',
+      contractAddress: ctx.contractAddress.slice(0, 20) + '…',
+      costSats: ctx.costSats,
+      remainingBalance: ctx.remainingBalance.toString(),
+      pendingSats: ctx.pendingSats.toString(),
+    },
+    data: {
+      price: { BCH: 1, USD: 380 },
+      block: 'latest',
+      network: process.env['BCH_NETWORK'] ?? 'chipnet',
+      hint: 'Call POST /subscription/claim or POST /merchant/claim-all to settle pending sats on-chain.',
+    },
+  });
+});
+
+/**
+ * GET /api/subscription/status
+ *
+ * Subscription-gated status endpoint — shows remaining balance info.
+ * Uses the same Router402 deduction as /api/subscription/data.
+ */
+app.get('/api/subscription/status', requireSubscription(), (req, res) => {
+  const ctx = req.subscriptionContext!;
+  res.json({
+    message: 'Subscription status check (Router402 deduction applied).',
+    context: {
+      requestId: ctx.requestId,
+      tokenCategory: ctx.tokenCategory.slice(0, 12) + '…',
+      contractAddress: ctx.contractAddress.slice(0, 20) + '…',
+      costSats: ctx.costSats,
+      remainingBalance: ctx.remainingBalance.toString(),
+      pendingSats: ctx.pendingSats.toString(),
+    },
+  });
+});
+
+/**
+ * GET /api/subscription/premium
+ *
+ * Higher-cost subscription endpoint (3× the default rate).
+ * Demonstrates per-endpoint pricing via the Router402 pattern.
+ */
+app.get('/api/subscription/premium', requireSubscription({ perCallSats: 1638 }), (req, res) => {
+  const ctx = req.subscriptionContext!;
+  res.json({
+    message: '🌟 Premium subscription endpoint — higher Router402 deduction rate.',
+    context: {
+      requestId: ctx.requestId,
+      costSats: ctx.costSats,
+      remainingBalance: ctx.remainingBalance.toString(),
+      pendingSats: ctx.pendingSats.toString(),
+    },
+    premiumData: {
+      analytics: { calls: 42, successRate: '99.8%' },
+      latency: '12ms',
+      region: 'chipnet',
     },
   });
 });
@@ -128,22 +215,33 @@ async function start() {
   }
 
   app.listen(PORT, () => {
-    console.log(`\n╔══════════════════════════════════════════════════════╗`);
-    console.log(`║  CashFlow402 Backend  •  v1.0                        ║`);
-    console.log(`║  Network: ${(process.env['BCH_NETWORK'] ?? 'chipnet').padEnd(42)}║`);
-    console.log(`║  Server:  http://localhost:${PORT}${' '.repeat(25)}║`);
-    console.log(`║  Docs:    http://localhost:${PORT}/docs${' '.repeat(21)}║`);
-    console.log(`╠══════════════════════════════════════════════════════╣`);
-    console.log(`║  GET  /health                 — liveness check       ║`);
-    console.log(`║  GET  /docs                   — Swagger UI           ║`);
-    console.log(`║  GET  /openapi.json           — raw spec             ║`);
-    console.log(`║  GET  /payment/challenge      — get a 402 challenge  ║`);
-    console.log(`║  POST /verify-payment         — verify BCH payment   ║`);
-    console.log(`║  POST /deploy-subscription    — create subscription  ║`);
-    console.log(`║  POST /subscription/claim     — merchant claim       ║`);
-    console.log(`║  GET  /subscription/status/:addr                     ║`);
-    console.log(`║  GET  /api/premium/hello      — demo 402 endpoint    ║`);
-    console.log(`╚══════════════════════════════════════════════════════╝\n`);
+    console.log(`\n╔══════════════════════════════════════════════════════════════╗`);
+    console.log(`║  CashFlow402 Backend  •  v1.0  (5-Step Flow Active)          ║`);
+    console.log(`║  Network: ${(process.env['BCH_NETWORK'] ?? 'chipnet').padEnd(51)}║`);
+    console.log(`║  Server:  http://localhost:${PORT}${' '.repeat(34)}║`);
+    console.log(`║  Docs:    http://localhost:${PORT}/docs${' '.repeat(28)}║`);
+    console.log(`╠══════════════════════════════════════════════════════════════╣`);
+    console.log(`║  ── Step 1: Merchant Deploy Plan ──────────────────────────  ║`);
+    console.log(`║  POST /merchant/plan              — create subscription plan  ║`);
+    console.log(`║  GET  /merchant/plans             — list all plans           ║`);
+    console.log(`║  GET  /merchant/dashboard         — earnings dashboard        ║`);
+    console.log(`║  ── Step 2: Client Buys Sub ───────────────────────────────  ║`);
+    console.log(`║  POST /deploy-subscription        — deploy covenant + NFT     ║`);
+    console.log(`║  POST /subscription/create-session — generate keypair        ║`);
+    console.log(`║  POST /subscription/auto-fund      — fund + activate sub      ║`);
+    console.log(`║  ── Step 3 + 4: Router402 API Access ──────────────────────  ║`);
+    console.log(`║  GET  /api/subscription/data      — sub-gated (deducts sats) ║`);
+    console.log(`║  GET  /api/subscription/status    — sub-gated status check   ║`);
+    console.log(`║  GET  /api/subscription/premium   — higher-rate endpoint      ║`);
+    console.log(`║  GET  /subscription/verify        — issue subscription JWT   ║`);
+    console.log(`║  ── Step 5: Merchant Claims ───────────────────────────────  ║`);
+    console.log(`║  POST /subscription/claim         — single claim             ║`);
+    console.log(`║  POST /merchant/claim-all         — batch claim all subs      ║`);
+    console.log(`║  ── Per-Call (HTTP-402) ───────────────────────────────────  ║`);
+    console.log(`║  GET  /payment/challenge          — get a 402 challenge       ║`);
+    console.log(`║  POST /verify-payment             — verify BCH payment        ║`);
+    console.log(`║  GET  /api/premium/hello          — demo per-call endpoint    ║`);
+    console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
   });
 }
 
