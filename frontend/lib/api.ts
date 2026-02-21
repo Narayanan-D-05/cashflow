@@ -125,8 +125,8 @@ export const api = {
   },
 
   /** Claim subscription funds (merchant). POST /subscription/claim */
-  claimSubscription(contractAddress: string): Promise<{ txid: string }> {
-    return post<{ txid: string }>("/subscription/claim", { contractAddress });
+  claimSubscription(contractAddress: string, tokenCategory: string): Promise<{ txid: string }> {
+    return post<{ txid: string }>("/subscription/claim", { contractAddress, tokenCategory });
   },
 
   /** Cancel a subscription. POST /subscription/cancel */

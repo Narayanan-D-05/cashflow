@@ -141,9 +141,9 @@ function StepCard({
             <div className="flex items-start gap-3 mb-3">
                 {/* Step number badge */}
                 <span className={`shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${status === "done" ? "bg-[var(--color-success)]/20 text-[var(--color-success)]" :
-                        status === "running" ? "bg-[var(--color-brand)]/20 text-[var(--color-brand)]" :
-                            status === "error" ? "bg-[var(--color-error)]/20 text-[var(--color-error)]" :
-                                "bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"
+                    status === "running" ? "bg-[var(--color-brand)]/20 text-[var(--color-brand)]" :
+                        status === "error" ? "bg-[var(--color-error)]/20 text-[var(--color-error)]" :
+                            "bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"
                     }`}>
                     {number}
                 </span>
@@ -151,9 +151,9 @@ function StepCard({
                     <div className="flex items-center gap-2">
                         <StepIcon status={status} icon={icon} />
                         <h3 className={`font-semibold text-sm ${status === "done" ? "text-[var(--color-success)]" :
-                                status === "running" ? "text-[var(--color-brand)]" :
-                                    status === "error" ? "text-[var(--color-error)]" :
-                                        "text-[var(--color-text)]"
+                            status === "running" ? "text-[var(--color-brand)]" :
+                                status === "error" ? "text-[var(--color-error)]" :
+                                    "text-[var(--color-text)]"
                             }`}>{title}</h3>
                     </div>
                     <p className="text-xs text-[var(--color-text-faint)] mt-0.5">{subtitle}</p>
@@ -255,19 +255,19 @@ export default function SubscriptionPage() {
 
     // ── Step 5: POST /subscription/claim ──────────────────────────────────────
     const runStep5 = useCallback(async () => {
-        if (!session?.contractAddress) return;
+        if (!session?.contractAddress || !fundData?.tokenCategory) return;
         setS5("running");
         setErrorMsg(null);
 
         try {
-            const data = await api.claimSubscription(session.contractAddress) as unknown as ClaimData;
+            const data = await api.claimSubscription(session.contractAddress, fundData.tokenCategory) as unknown as ClaimData;
             setClaimData(data);
             setS5("done");
         } catch (e) {
             setS5("error");
             err(String(e));
         }
-    }, [session]);
+    }, [session, fundData]);
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -582,8 +582,8 @@ export default function SubscriptionPage() {
                             ].map(([method, path, desc]) => (
                                 <div key={path} className="flex items-start gap-2 text-xs">
                                     <code className={`shrink-0 font-mono font-bold text-[10px] px-1.5 py-0.5 rounded ${method === "GET" ? "bg-[var(--color-info)]/15 text-[var(--color-info)]" :
-                                            method === "POST" ? "bg-[var(--color-brand)]/15 text-[var(--color-brand)]" :
-                                                "bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"
+                                        method === "POST" ? "bg-[var(--color-brand)]/15 text-[var(--color-brand)]" :
+                                            "bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"
                                         }`}>{method}</code>
                                     <code className="text-[var(--color-text-muted)] shrink-0">{path}</code>
                                     <span className="text-[var(--color-text-faint)]">— {desc}</span>
