@@ -52,8 +52,8 @@ function encodeUInt32LE(n: number): Buffer {
 export function encodeMutableNftPrefix(categoryHex: string, commitment: Buffer): Buffer {
   const categoryLE = Buffer.from(categoryHex, 'hex').reverse(); // 32 bytes LE
   const hasCommitment = commitment.length > 0;
-  // 0x02 = HAS_NFT, 0x10 = MUTABLE, 0x40 = HAS_COMMITMENT_LENGTH
-  const bitfield = 0x02 | 0x10 | (hasCommitment ? 0x40 : 0x00);
+  // 0x20 = HAS_NFT, 0x01 = MUTABLE, 0x40 = HAS_COMMITMENT_LENGTH
+  const bitfield = 0x20 | 0x01 | (hasCommitment ? 0x40 : 0x00);
 
   const parts: Buffer[] = [
     Buffer.from([0xef]),   // PREFIX_TOKEN magic
