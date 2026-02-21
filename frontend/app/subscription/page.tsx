@@ -398,13 +398,13 @@ export default function SubscriptionPage() {
                                     <div className="flex items-start gap-2 p-3 rounded-xl bg-[var(--color-brand)]/10 border border-[var(--color-brand)]/20">
                                         <Zap className="w-4 h-4 text-[var(--color-brand)] shrink-0 mt-0.5" />
                                         <div className="text-xs text-[var(--color-text-muted)]">
-                                            Need at least <span className="text-[var(--color-brand)] font-bold font-mono">{session.depositSats.toLocaleString()} sats</span> in this address.
-                                            Get free ChipNet tBCH below, then click Auto-Fund.
+                                            Need at least <span className="text-[var(--color-brand)] font-bold font-mono">{(session.depositSats + 1500).toLocaleString()} sats</span> in this address (Deposit + 1500 miner fee).
+                                            Get free ChipNet tBCH below or click Pay with Paytaca, then click Auto-Fund.
                                         </div>
                                     </div>
                                     <div className="flex gap-2 flex-wrap items-center">
                                         <a
-                                            href={`${session.subscriberAddress}?amount=${(session.depositSats + 5000) / 100000000}`}
+                                            href={`${session.subscriberAddress}?amount=${(session.depositSats + 1500) / 100000000}`}
                                             className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-semibold
                                                bg-[#00c58e] text-black shadow-[0_0_15px_rgba(0,197,142,0.3)]
                                                hover:bg-[#00db9d] hover:shadow-[0_0_20px_rgba(0,197,142,0.5)] transition-all shrink-0"

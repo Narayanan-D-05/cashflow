@@ -52,8 +52,8 @@ function encodeUInt32LE(n: number): Buffer {
 export function encodeMutableNftPrefix(categoryHex: string, commitment: Buffer): Buffer {
   const categoryLE = Buffer.from(categoryHex, 'hex').reverse(); // 32 bytes LE
   const hasCommitment = commitment.length > 0;
-  // 0x02 = HAS_NFT, 0x20 = MUTABLE, 0x40 = HAS_COMMITMENT_LENGTH
-  const bitfield = 0x02 | 0x20 | (hasCommitment ? 0x40 : 0x00);
+  // 0x02 = HAS_NFT, 0x10 = MUTABLE, 0x40 = HAS_COMMITMENT_LENGTH
+  const bitfield = 0x02 | 0x10 | (hasCommitment ? 0x40 : 0x00);
 
   const parts: Buffer[] = [
     Buffer.from([0xef]),   // PREFIX_TOKEN magic
@@ -89,7 +89,7 @@ function addressToLockBytecode(address: string): Buffer {
 
 // ─── BIP143 BCH sighash (SIGHASH_ALL | SIGHASH_FORKID = 0x41) ─────────────────
 
-interface InputInfo  { txid: string; vout: number; value: bigint; sequence: number }
+interface InputInfo { txid: string; vout: number; value: bigint; sequence: number }
 interface OutputInfo { lockBytecode: Buffer; value: bigint; tokenPrefix?: Buffer }
 
 function computeBCHSighash(
@@ -176,8 +176,8 @@ function encodeTx(
  */
 export async function buildAndBroadcastGenesisFundingTx(opts: {
   subscriberPrivKey: Uint8Array;
-  subscriberPubKey:  Uint8Array;
-  subscriberPkh:     Buffer;
+  subscriberPubKey: Uint8Array;
+  subscriberPkh: Buffer;
   subscriberAddress: string;
   contractTokenAddress: string;
   genesisCommitment: string;  // hex
@@ -214,7 +214,7 @@ export async function buildAndBroadcastGenesisFundingTx(opts: {
   const tokenCategory = genesisUtxo.txid;
 
   // 3. Build outputs
-  const contractLockBytecode   = addressToLockBytecode(contractTokenAddress);
+  const contractLockBytecode = addressToLockBytecode(contractTokenAddress);
   const subscriberLockBytecode = addressToLockBytecode(subscriberAddress);
   const tokenPrefix = encodeMutableNftPrefix(tokenCategory, Buffer.from(genesisCommitment, 'hex'));
 
@@ -225,13 +225,13 @@ export async function buildAndBroadcastGenesisFundingTx(opts: {
 
   // 4. Compute BIP143 BCH sighash (SIGHASH_ALL | SIGHASH_FORKID = 0x41)
   const infoInputs: InputInfo[] = [{
-    txid:     genesisUtxo.txid,
-    vout:     genesisUtxo.vout,
-    value:    genesisUtxo.satoshis,
+    txid: genesisUtxo.txid,
+    vout: genesisUtxo.vout,
+    value: genesisUtxo.satoshis,
     sequence: 0xffffffff,
   }];
 
-  const scriptCode   = p2pkhScript(subscriberPkh);
+  const scriptCode = p2pkhScript(subscriberPkh);
   const SIGHASH_TYPE = 0x41; // SIGHASH_ALL | SIGHASH_FORKID
   const sighash = computeBCHSighash(2, infoInputs, outputs, 0, scriptCode, 0, SIGHASH_TYPE);
 
@@ -251,10 +251,10 @@ export async function buildAndBroadcastGenesisFundingTx(opts: {
 
   // 7. Encode and broadcast
   const signedInputs: SignedInput[] = [{
-    txid:            genesisUtxo.txid,
-    vout:            genesisUtxo.vout,
+    txid: genesisUtxo.txid,
+    vout: genesisUtxo.vout,
     unlockingScript,
-    sequence:        0xffffffff,
+    sequence: 0xffffffff,
   }];
 
   const rawHex = encodeTx(2, signedInputs, outputs, 0).toString('hex');

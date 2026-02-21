@@ -1,0 +1,6 @@
+﻿Last Record Contract Address: bchtest:pvzq7pf602gjjmamqre9r4v0qd6fs3f5s5xemrpgqy2dtlv9dl36vkd9nfqk8
+Last Record Token Category (DB): decdb1d36c84cb7d1df76d480a7f1a7101d0d51dbcca382e3c35cf1bbe842942
+Computed Contract Address: bchtest:pvzq7pf602gjjmamqre9r4v0qd6fs3f5s5xemrpgqy2dtlv9dl36vkd9nfqk8
+Computed Token Address: bchtest:rvzq7pf602gjjmamqre9r4v0qd6fs3f5s5xemrpgqy2dtlv9dl36vy7ejsp0v
+Token Address UTXOs On-Chain: 1
+FOUND TOKEN CATEGORY ON-CHAIN: decdb1d36c84cb7d1df76d480a7f1a7101d0d51dbcca382e3c35cf1bbe842942
