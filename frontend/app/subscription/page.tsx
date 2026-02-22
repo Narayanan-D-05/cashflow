@@ -266,9 +266,9 @@ export default function SubscriptionPage() {
             setSession(data);
             localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
             setS1("done");
-        } catch (e) {
+        } catch (e: any) {
             setS1("error");
-            err(String(e));
+            err(`Failed to connect to backend (Port 3000). Error: ${e.message || String(e)}`);
         }
     }, [session]);
 

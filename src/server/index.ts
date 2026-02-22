@@ -20,9 +20,9 @@ import { require402 } from './middleware/require402.js';
 import { requireSubscription } from './middleware/requireSubscription.js';
 import { connectElectrum } from '../services/electrumService.js';
 import { openApiSpec } from './openapi.js';
-import { getByAddress, recordClaim } from '../services/subscriptionStore.js';
+import { getByAddress, recordClaim, getAllSubscriptions, setStatus } from '../services/subscriptionStore.js';
 import { buildAndSendClaimTx } from '../contracts/deploy.js';
-import { resetPendingSats } from '../services/usageMeter.js';
+import { resetPendingSats, getUsage } from '../services/usageMeter.js';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
@@ -123,27 +123,6 @@ app.get('/api/premium/data', require402, (req, res) => {
  */
 app.get('/api/subscription/data', requireSubscription(), async (req, res) => {
   const ctx = req.subscriptionContext!;
-  let claimTxid: string | undefined;
-
-  // --- AUTOMATIC JUST-IN-TIME (JIT) CLAIMING ---
-  // If the user's pending unpaid usage exceeds our threshold (e.g. 4000 sats, which is half of 8000 deposit),
-  // automatically trigger an on-chain claim for this specific subscription before responding.
-  if (ctx.pendingSats >= 4000n) {
-    const record = getByAddress(ctx.contractAddress);
-    if (record) {
-      console.log(`[JIT Claim] Threshold crossed (${ctx.pendingSats} sats). Triggering auto-claim for ${ctx.contractAddress}...`);
-      try {
-        const result = await buildAndSendClaimTx(record, ctx.pendingSats);
-        recordClaim(record.contractAddress, result.newLastClaimBlock, result.newBalance);
-        resetPendingSats(record.tokenCategory, result.claimedSats);
-        claimTxid = result.txid;
-        console.log(`[JIT Claim] ✅ Success: ${result.claimedSats} sats claimed in tx ${claimTxid}`);
-      } catch (err) {
-        console.error(`[JIT Claim] ❌ Failed to auto-claim:`, err);
-      }
-    }
-  }
-
   res.json({
     message: '✅ Subscription-gated API call succeeded (Router402 deduction applied).',
     flow: {
@@ -157,7 +136,6 @@ app.get('/api/subscription/data', requireSubscription(), async (req, res) => {
       costSats: ctx.costSats,
       remainingBalance: ctx.remainingBalance.toString(),
       pendingSats: ctx.pendingSats.toString(),
-      claimTxid, // Pass it back to the client!
     },
     data: {
       price: { BCH: 1, USD: 380 },
@@ -267,6 +245,38 @@ async function start() {
     console.log(`║  POST /verify-payment             — verify BCH payment        ║`);
     console.log(`║  GET  /api/premium/hello          — demo per-call endpoint    ║`);
     console.log(`╚══════════════════════════════════════════════════════════════╝\n`);
+
+    // --- BACKGROUND AUTOMATIC CLAIMING (3-Minute Polling) ---
+    // Instead of instantaneous JIT claiming inside the Router402 which runs into
+    // "Interval not yet elapsed" blockchain errors, we run a reliable background loop.
+    setInterval(async () => {
+      const activeSubs = getAllSubscriptions().filter(s => s.status === 'active');
+      for (const record of activeSubs) {
+        try {
+          const usage = getUsage(record.tokenCategory);
+          const pendingSats = usage?.pendingSats ?? 0n;
+
+          // Only attempt a claim if the owed threshold (e.g. 4000 sats) is reached
+          if (pendingSats >= 4000n) {
+            console.log(`[Background Claim] Checking threshold for ${record.contractAddress.slice(0, 25)}... (${pendingSats} pending sats)`);
+            const result = await buildAndSendClaimTx(record, pendingSats);
+            recordClaim(record.contractAddress, result.newLastClaimBlock, result.newBalance);
+            resetPendingSats(record.tokenCategory, result.claimedSats);
+            console.log(`[Background Claim] ✅ Successfully claimed ${result.claimedSats} sats!`);
+            console.log(`[Background Claim] 🔗 TxID: https://chipnet.imaginary.cash/tx/${result.txid}`);
+          }
+        } catch (e) {
+          const errMsg = String(e);
+          if (errMsg.includes('No UTXOs found')) {
+            console.log(`[Background Claim] ❌ UTXOs missing for ${record.contractAddress.slice(0, 25)}. Marking cancelled.`);
+            setStatus(record.contractAddress, 'cancelled');
+          } else if (!errMsg.includes('Interval not yet elapsed')) {
+            console.error(`[Background Claim] ❌ Error claiming for ${record.contractAddress.slice(0, 25)}:`, errMsg);
+          }
+          // If interval not yet elapsed, it gracefully fails and waits for the next block
+        }
+      }
+    }, 3 * 60 * 1000); // Run every 3 minutes
   });
 }
 
