@@ -20,6 +20,9 @@ import { require402 } from './middleware/require402.js';
 import { requireSubscription } from './middleware/requireSubscription.js';
 import { connectElectrum } from '../services/electrumService.js';
 import { openApiSpec } from './openapi.js';
+import { getByAddress, recordClaim } from '../services/subscriptionStore.js';
+import { buildAndSendClaimTx } from '../contracts/deploy.js';
+import { resetPendingSats } from '../services/usageMeter.js';
 
 const app = express();
 const PORT = parseInt(process.env['PORT'] ?? '3000', 10);
@@ -118,8 +121,29 @@ app.get('/api/premium/data', require402, (req, res) => {
  * tracked balance.  Accumulated sats are claimed by the merchant via
  * POST /subscription/claim or POST /merchant/claim-all.
  */
-app.get('/api/subscription/data', requireSubscription(), (req, res) => {
+app.get('/api/subscription/data', requireSubscription(), async (req, res) => {
   const ctx = req.subscriptionContext!;
+  let claimTxid: string | undefined;
+
+  // --- AUTOMATIC JUST-IN-TIME (JIT) CLAIMING ---
+  // If the user's pending unpaid usage exceeds our threshold (e.g. 4000 sats, which is half of 8000 deposit),
+  // automatically trigger an on-chain claim for this specific subscription before responding.
+  if (ctx.pendingSats >= 4000n) {
+    const record = getByAddress(ctx.contractAddress);
+    if (record) {
+      console.log(`[JIT Claim] Threshold crossed (${ctx.pendingSats} sats). Triggering auto-claim for ${ctx.contractAddress}...`);
+      try {
+        const result = await buildAndSendClaimTx(record, ctx.pendingSats);
+        recordClaim(record.contractAddress, result.newLastClaimBlock, result.newBalance);
+        resetPendingSats(record.tokenCategory, result.claimedSats);
+        claimTxid = result.txid;
+        console.log(`[JIT Claim] ✅ Success: ${result.claimedSats} sats claimed in tx ${claimTxid}`);
+      } catch (err) {
+        console.error(`[JIT Claim] ❌ Failed to auto-claim:`, err);
+      }
+    }
+  }
+
   res.json({
     message: '✅ Subscription-gated API call succeeded (Router402 deduction applied).',
     flow: {
@@ -133,6 +157,7 @@ app.get('/api/subscription/data', requireSubscription(), (req, res) => {
       costSats: ctx.costSats,
       remainingBalance: ctx.remainingBalance.toString(),
       pendingSats: ctx.pendingSats.toString(),
+      claimTxid, // Pass it back to the client!
     },
     data: {
       price: { BCH: 1, USD: 380 },
