@@ -1,0 +1,374 @@
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+import CursorGlow from "@/components/cursor-glow";
+import { api } from "@/lib/api";
+import {
+    CheckCircle2,
+    Circle,
+    Loader2,
+    AlertTriangle,
+    Copy,
+    Check,
+    ExternalLink,
+    RefreshCw,
+    Zap,
+    Key,
+    Wallet,
+    Play,
+    ArrowDown,
+    Coins,
+    TrendingUp,
+} from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type StepStatus = "idle" | "running" | "done" | "error";
+
+interface SessionData {
+    subscriberAddress: string;
+    subscriberWif: string;
+    contractAddress: string;
+    tokenAddress: string;
+    genesisCommitment: string;
+    depositSats: number;
+    authorizedSats?: number;  // legacy
+    maxSats?: number;         // metered billing ceiling
+    intervalBlocks: number;
+    startBlock: number;
+    hint: string;
+}
+
+interface FundData {
+    txid: string;
+    tokenCategory: string;
+    contractAddress: string;
+    depositSats: string;
+    authorizedSats?: string;  // legacy
+    maxSats?: string;         // metered billing ceiling
+    intervalBlocks: number;
+}
+
+interface ApiCallData {
+    message: string;
+    flow: { step3: string; step4: string };
+    context: {
+        requestId: string;
+        tokenCategory: string;
+        contractAddress: string;
+        costSats: number;
+        remainingBalance: string;
+        pendingSats: string;
+    };
+    data: { price: { BCH: number; USD: number }; network: string; hint: string };
+}
+
+interface ClaimData {
+    txid: string;
+    claimedSats: number;
+    newBalance: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function CopyBtn({ value }: { value: string }) {
+    const [copied, setCopied] = useState(false);
+    function copy() {
+        navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }
+    return (
+        <button
+            onClick={copy}
+            className="shrink-0 p-1.5 rounded-lg hover:bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] hover:text-[var(--color-brand)] transition-all"
+            title="Copy"
+        >
+            {copied
+                ? <Check className="w-3.5 h-3.5 text-[var(--color-success)]" />
+                : <Copy className="w-3.5 h-3.5" />}
+        </button>
+    );
+}
+
+function MonoRow({ label, value, dimValue }: { label: string; value: string; dimValue?: boolean }) {
+    return (
+        <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] uppercase tracking-widest text-[var(--color-text-faint)]">{label}</span>
+            <div className="flex items-center gap-1 bg-[var(--color-surface-alt)] rounded-xl px-3 py-2">
+                <code className={`flex-1 text-xs font-mono break-all ${dimValue ? "text-[var(--color-text-muted)]" : "text-[var(--color-text)]"}`}>
+                    {value}
+                </code>
+                <CopyBtn value={value} />
+            </div>
+        </div>
+    );
+}
+
+function StepIcon({ status, icon: Icon }: { status: StepStatus; icon: React.ElementType }) {
+    if (status === "running") return <Loader2 className="w-5 h-5 text-[var(--color-brand)] animate-spin" />;
+    if (status === "done") return <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />;
+    if (status === "error") return <AlertTriangle className="w-5 h-5 text-[var(--color-error)]" />;
+    return <Icon className="w-5 h-5 text-[var(--color-text-faint)]" />;
+}
+
+// ─── Step card wrapper ────────────────────────────────────────────────────────
+
+function StepCard({
+    number,
+    title,
+    subtitle,
+    status,
+    icon,
+    children,
+}: {
+    number: number;
+    title: string;
+    subtitle: string;
+    status: StepStatus;
+    icon: React.ElementType;
+    children?: React.ReactNode;
+}) {
+    const borderColor =
+        status === "done" ? "border-[var(--color-success)]/30" :
+            status === "running" ? "border-[var(--color-brand)]/40" :
+                status === "error" ? "border-[var(--color-error)]/30" :
+                    "border-[var(--glass-border)]";
+
+    return (
+        <div className={`glass rounded-2xl p-5 border ${borderColor} transition-all duration-300`}>
+            <div className="flex items-start gap-3 mb-3">
+                {/* Step number badge */}
+                <span className={`shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${status === "done" ? "bg-[var(--color-success)]/20 text-[var(--color-success)]" :
+                    status === "running" ? "bg-[var(--color-brand)]/20 text-[var(--color-brand)]" :
+                        status === "error" ? "bg-[var(--color-error)]/20 text-[var(--color-error)]" :
+                            "bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"
+                    }`}>
+                    {number}
+                </span>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <StepIcon status={status} icon={icon} />
+                        <h3 className={`font-semibold text-sm ${status === "done" ? "text-[var(--color-success)]" :
+                            status === "running" ? "text-[var(--color-brand)]" :
+                                status === "error" ? "text-[var(--color-error)]" :
+                                    "text-[var(--color-text)]"
+                            }`}>{title}</h3>
+                    </div>
+                    <p className="text-xs text-[var(--color-text-faint)] mt-0.5">{subtitle}</p>
+                </div>
+            </div>
+            {children && <div className="ml-10">{children}</div>}
+        </div>
+    );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function SubscriptionPage() {
+    // Per-step state
+    const [s1, setS1] = useState<StepStatus>("idle");
+    const [s2, setS2] = useState<StepStatus>("idle");
+    const [s3, setS3] = useState<StepStatus>("idle");
+    const [s4, setS4] = useState<StepStatus>("idle");
+    const [s5, setS5] = useState<StepStatus>("idle");
+
+    // Data from backend
+    const [session, setSession] = useState<SessionData | null>(null);
+    const [fundData, setFundData] = useState<FundData | null>(null);
+    const [apiData, setApiData] = useState<ApiCallData | null>(null);
+    const [claimData, setClaimData] = useState<ClaimData | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // API call counter (for Step 4 repeat calls)
+    const [callCount, setCallCount] = useState(0);
+    const [callbackUrl, setCallbackUrl] = useState<string | null>(null);
+
+    // On mount: if coming from merchant redirect (callbackUrl present),
+    // always clear stale localStorage and auto-create a fresh session.
+    // Otherwise, restore saved session but validate it against the backend first.
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const cb = urlParams.get("callbackUrl");
+        setCallbackUrl(cb);
+
+        const saved = localStorage.getItem("cashflow402_demo_session");
+
+        if (cb) {
+            // Coming from merchant redirect — always start fresh
+            localStorage.removeItem("cashflow402_demo_session");
+            // Auto-create new session after short delay so UI renders first
+            setTimeout(() => {
+                void (async () => {
+                    setS1("running");
+                    try {
+                        const data = await api.createSession();
+                        setSession(data);
+                        localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
+                        setS1("done");
+                    } catch (e) {
+                        setS1("error");
+                        setErrorMsg(String(e));
+                    }
+                })();
+            }, 300);
+            return;
+        }
+
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Validate session against backend before restoring
+                fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/subscription/status/${encodeURIComponent(parsed.contractAddress)}`)
+                    .then(r => {
+                        if (r.ok) {
+                            setSession(parsed);
+                            setS1("done");
+                        } else {
+                            // Backend doesn't know this contract — stale session, clear it
+                            localStorage.removeItem("cashflow402_demo_session");
+                        }
+                    })
+                    .catch(() => {
+                        // Network error — restore optimistically
+                        setSession(parsed);
+                        setS1("done");
+                    });
+            } catch (e) {
+                console.error("Failed to parse saved session", e);
+                localStorage.removeItem("cashflow402_demo_session");
+            }
+        }
+    }, []);
+
+    function err(msg: string) {
+        setErrorMsg(msg);
+    }
+
+    // ── Step 1: POST /subscription/create-session ──────────────────────────────
+    const runStep1 = useCallback(async () => {
+        // Already have a valid session — don't overwrite unless user clears first
+        if (session) return;
+
+        setS1("running");
+        setFundData(null);
+        setApiData(null);
+        setClaimData(null);
+        setS2("idle"); setS3("idle"); setS4("idle"); setS5("idle");
+        setErrorMsg(null);
+        setCallCount(0);
+
+        try {
+            const data = await api.createSession();
+            setSession(data);
+            localStorage.setItem("cashflow402_demo_session", JSON.stringify(data));
+            setS1("done");
+        } catch (e: any) {
+            setS1("error");
+            err(`Failed to connect to backend (Port 3000). Error: ${e.message || String(e)}`);
+        }
+    }, [session]);
+
+    const clearSession = useCallback(() => {
+        localStorage.removeItem("cashflow402_demo_session");
+        setSession(null);
+        setFundData(null);
+        setApiData(null);
+        setClaimData(null);
+        setS1("idle"); setS2("idle"); setS3("idle"); setS4("idle"); setS5("idle");
+        setCallCount(0);
+        setErrorMsg(null);
+    }, []);
+
+    // ── Step 3: POST /subscription/auto-fund ──────────────────────────────────
+    const runStep3 = useCallback(async () => {
+        if (!session) return;
+        setS3("running");
+        setErrorMsg(null);
+
+        try {
+            const data = await api.autoFund({
+                contractAddress: session.contractAddress,
+                subscriberWif: session.subscriberWif,
+            });
+            setFundData({
+                txid: data.txid,
+                tokenCategory: data.tokenCategory,
+                contractAddress: data.contractAddress,
+                depositSats: data.depositSats,
+                authorizedSats: data.authorizedSats,
+                intervalBlocks: data.intervalBlocks,
+            });
+            setS3("done");
+        } catch (e) {
+            setS3("error");
+            err(String(e));
+        }
+    }, [session]);
+
+    // ── Step 4: GET /api/subscription/data (Router402 deduction) ───────────────
+    const runStep4 = useCallback(async () => {
+        if (!fundData?.tokenCategory) return;
+        setS4("running");
+        setErrorMsg(null);
+
+        try {
+            const data = await api.subscriptionData(fundData.tokenCategory);
+            setApiData(data);
+            setCallCount(c => c + 1);
+            setS4("done");
+        } catch (e) {
+            setS4("error");
+            err(String(e));
+        }
+    }, [fundData]);
+
+    // ── Step 5: POST /subscription/claim ──────────────────────────────────────
+    const runStep5 = useCallback(async () => {
+        if (!session?.contractAddress || !fundData?.tokenCategory) return;
+        setS5("running");
+        setErrorMsg(null);
+
+        try {
+            const data = await api.claimSubscription(session.contractAddress, fundData.tokenCategory) as unknown as ClaimData;
+            setClaimData(data);
+            setS5("done");
+        } catch (e) {
+            setS5("error");
+            err(String(e));
+        }
+    }, [session, fundData]);
+
+    // ── Cancel: POST /subscription/cancel ─────────────────────────────
+    const [cancelData, setCancelData] = useState<{ txid: string; refundedSats: string } | null>(null);
+    const [sCancelStatus, setSCancelStatus] = useState<"idle" | "running" | "done" | "error">("idle");
+    const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+
+    const runCancel = useCallback(async () => {
+        if (!session?.contractAddress || !session?.subscriberWif) return;
+        setSCancelStatus("running");
+        setConfirmWithdraw(false);
+        setErrorMsg(null);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"}/subscription/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contractAddress: session.contractAddress,
+                    subscriberWif: session.subscriberWif,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error ?? JSON.stringify(data));
+            setCancelData({ txid: data.txid, refundedSats: data.refundedSats });
+            setSCancelStatus("done");
+        } catch (e) {
+            setSCancelStatus("error");
+            err(String(e));
+        }
+    }, [session]);
+
+    

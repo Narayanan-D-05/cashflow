@@ -30,10 +30,34 @@ import {
     resetPendingSats,
     getUsage,
 } from '../../services/usageMeter.js';
-import { buildAndSendClaimTx } from '../../contracts/deploy.js';
+import { buildAndSendClaimTx, getProvider } from '../../contracts/deploy.js';
 
 
 export const merchantRouter = Router();
+
+// ─── GET /merchant/wallet-balance ──────────────────────────────────────────────
+
+merchantRouter.get('/merchant/wallet-balance', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const merchantAddress = process.env['MERCHANT_ADDRESS'];
+        if (!merchantAddress) {
+            res.status(500).json({ error: 'MERCHANT_ADDRESS not configured' });
+            return;
+        }
+
+        const provider = getProvider();
+        const utxos = await provider.getUtxos(merchantAddress);
+        const balanceSats = utxos.reduce((acc, u) => acc + u.satoshis, 0n);
+
+        res.status(200).json({
+            address: merchantAddress,
+            balanceSats: balanceSats.toString()
+        });
+    } catch (error) {
+        console.error('Error fetching merchant wallet balance:', error);
+        res.status(500).json({ error: 'Failed to fetch wallet balance' });
+    }
+});
 
 // ─── POST /merchant/plan ──────────────────────────────────────────────────────
 

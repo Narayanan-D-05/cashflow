@@ -96,6 +96,7 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
       merchantPkhHex: record.merchantPkh,
       subscriberPkhHex: record.subscriberPkh,
       intervalBlocks: record.intervalBlocks,
+      maxSats: Number(record.authorizedSats),
     });
 
     const result = await verifySubscriptionFunding({
@@ -122,6 +123,7 @@ webhookRouter.post('/webhook/tx-confirmed', async (req: Request, res: Response):
       merchantPkhHex: record.merchantPkh,
       subscriberPkhHex: record.subscriberPkh,
       intervalBlocks: record.intervalBlocks,
+      maxSats: Number(record.authorizedSats),
     });
 
     try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import CursorGlow from "@/components/cursor-glow";
@@ -54,6 +54,40 @@ function MonoRow({ label, value, dimValue }: { label: string; value: string; dim
 }
 
 export default function MerchantDashboard() {
+    const [subscriptions, setSubscriptions] = useState<any[]>([]);
+    const [subsLoading, setSubsLoading] = useState(false);
+
+    const [walletBalance, setWalletBalance] = useState<string | null>(null);
+    const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+    const fetchSubscriptions = async () => {
+        setSubsLoading(true);
+        try {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+            const [listRes, walletRes] = await Promise.all([
+                fetch(`${apiBase}/subscription/list`),
+                fetch(`${apiBase}/merchant/wallet-balance`)
+            ]);
+
+            const listData = await listRes.json();
+            setSubscriptions(listData.subscriptions || []);
+
+            if (walletRes.ok) {
+                const walletData = await walletRes.json();
+                setWalletBalance(walletData.balanceSats);
+                setWalletAddress(walletData.address);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSubsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSubscriptions();
+    }, []);
+
     const [contractAddress, setContractAddress] = useState("");
     const [tokenCategory, setTokenCategory] = useState("");
     const [loading, setLoading] = useState(false);
@@ -112,6 +146,17 @@ export default function MerchantDashboard() {
                         <p className="text-lg text-[var(--color-text-muted)] mt-2 leading-relaxed">
                             Trigger on-chain claims to pull earned BCH from your active subscription active smart contracts directly into your secure backend merchant wallet.
                         </p>
+
+                        {walletBalance !== null && (
+                            <div className="mt-6 inline-flex flex-col gap-1 p-5 rounded-xl border border-[var(--glass-border)] bg-[var(--color-surface-alt)]/30 backdrop-blur-md shadow-lg">
+                                <p className="text-[10px] uppercase tracking-widest text-[var(--color-text-faint)]">Merchant Wallet Balance</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-4xl font-bold font-mono text-[var(--color-success)] drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]">{Number(walletBalance).toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-[var(--color-success)]/60">sats</span>
+                                </div>
+                                {walletAddress && <p className="text-[10px] font-mono text-[var(--color-text-muted)] mt-2 opacity-70">{walletAddress}</p>}
+                            </div>
+                        )}
                     </section>
 
                     {errorMsg && (
@@ -254,6 +299,79 @@ export default function MerchantDashboard() {
                             )}
                         </div>
                     </div>
+
+                    {/* Active Subscribers & Claims Table */}
+                    <section className="mt-12">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="text-2xl font-bold font-[var(--font-space-grotesk)] text-gradient flex items-center gap-2"><Zap className="w-5 h-5 text-[var(--color-brand)]" /> Active Subscribers & Claims</h2>
+                            <button onClick={fetchSubscriptions} className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-white bg-[var(--color-surface-alt)] px-4 py-2 rounded-xl border border-[var(--glass-border)] hover:border-[var(--color-brand)]/40 transition-all font-semibold shadow-sm">
+                                {subsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Refresh List"}
+                            </button>
+                        </div>
+                        <div className="glass rounded-2xl border border-[var(--glass-border)] overflow-hidden shadow-lg">
+                            {subsLoading && subscriptions.length === 0 ? (
+                                <div className="p-12 flex flex-col items-center justify-center gap-3">
+                                    <Loader2 className="w-8 h-8 animate-spin text-[var(--color-brand)]" />
+                                    <p className="text-sm text-[var(--color-text-faint)]">Syncing with Cashflow store...</p>
+                                </div>
+                            ) : subscriptions.length === 0 ? (
+                                <div className="p-12 text-center flex flex-col items-center justify-center gap-2">
+                                    <Server className="w-8 h-8 text-[var(--color-text-faint)]/50" />
+                                    <p className="text-[var(--color-text-faint)] text-sm">No subscriptions found on the network.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm whitespace-nowrap">
+                                        <thead className="bg-[var(--color-surface-alt)]/50 text-[var(--color-text-faint)] text-[10px] uppercase tracking-widest border-b border-[var(--glass-border)] relative">
+                                            <tr>
+                                                <th className="px-6 py-4 font-semibold">Status</th>
+                                                <th className="px-6 py-4 font-semibold">Subscription NFT ID</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Current Balance</th>
+                                                <th className="px-6 py-4 font-semibold text-right">Max Authorized</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[var(--glass-border)]">
+                                            {subscriptions.map((sub, i) => (
+                                                <tr key={i} className="hover:bg-[var(--color-surface-alt)]/40 hover:glass transition-colors group">
+                                                    <td className="px-6 py-5">
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider ${sub.status === 'active' ? 'bg-green-500/10 text-green-400 border border-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.1)]' :
+                                                            sub.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                                                'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                                                            }`}>
+                                                            {sub.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                                                            {sub.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-5">
+                                                        <div className="flex items-center gap-2">
+                                                            <code className="px-2.5 py-1 rounded bg-[var(--color-bg)] border border-[var(--glass-border)] font-mono text-[11px] text-[var(--color-text-muted)]">
+                                                                {String(sub.tokenCategory).substring(0, 20)}...
+                                                            </code>
+                                                            <CopyBtn value={String(sub.tokenCategory)} />
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-1.5">
+                                                            <span className="text-[10px] text-[var(--color-text-faint)] uppercase tracking-wider">Address:</span>
+                                                            <code className="text-[10px] font-mono text-[var(--color-text-faint)] truncate max-w-[120px]" title={sub.contractAddress}>
+                                                                {String(sub.contractAddress).substring(0, 15)}...
+                                                            </code>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-right">
+                                                        <span className="font-bold font-mono text-[var(--color-success)] text-base">{Number(sub.balance).toLocaleString()}</span>
+                                                        <span className="text-[10px] uppercase font-bold text-[var(--color-success)]/60 ml-1.5">sats</span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-right">
+                                                        <span className="text-[var(--color-text-muted)] font-mono">{Number(sub.authorizedSats).toLocaleString()}</span>
+                                                        <span className="text-[10px] uppercase font-bold text-[var(--color-text-faint)] ml-1.5">sats</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </section>
 
                 </div>
             </main>

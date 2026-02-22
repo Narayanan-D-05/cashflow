@@ -152,7 +152,7 @@ export async function buildAndSendClaimTx(
 
   // Fetch contract UTXOs from the stored token address where the NFT lives
   // Fall back to contract.tokenAddress for legacy records or missing fields
-  const tokenAddress = record.tokenAddress ?? contract.tokenAddress;
+  const tokenAddress = record.tokenAddress || contract.tokenAddress;
   const utxos = await provider.getUtxos(tokenAddress);
   if (utxos.length === 0) {
     throw new Error(`No UTXOs found at contract tokenAddress ${tokenAddress}`);
@@ -268,7 +268,7 @@ export async function buildAndSendCancelTx(
   });
 
   // Use the stored tokenAddress directly — don't re-derive, constructor args may differ
-  const tokenAddress = record.tokenAddress ?? contract.tokenAddress;
+  const tokenAddress = record.tokenAddress || contract.tokenAddress;
   const utxos = await provider.getUtxos(tokenAddress);
   if (utxos.length === 0) {
     throw new Error(`No UTXOs found at contract tokenAddress ${contract.tokenAddress}`);

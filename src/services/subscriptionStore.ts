@@ -20,32 +20,34 @@ import type { SubscriptionRecord, SubscriptionStatus } from '../types.js';
 
 // ─── Persistence helpers ──────────────────────────────────────────────────────
 
-const __dir     = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR  = join(__dir, '../../data');
+const __dir = dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = join(__dir, '../../data');
 const DATA_FILE = join(DATA_DIR, 'subscriptions.json');
 
 /** Serialisable form: BigInt fields stored as decimal strings */
 interface PersistedRecord {
-  contractAddress:   string;
-  tokenCategory:     string;
-  merchantPkh:       string;
-  subscriberPkh:     string;
+  contractAddress: string;
+  tokenAddress?: string;
+  tokenCategory: string;
+  merchantPkh: string;
+  subscriberPkh: string;
   subscriberAddress: string;
-  merchantAddress:   string;
-  intervalBlocks:    number;
-  authorizedSats:    string;   // BigInt → string
-  lastClaimBlock:    number;
-  balance:           string;   // BigInt → string
-  status:            SubscriptionStatus;
-  createdAt:         string;
-  updatedAt:         string;
+  merchantAddress: string;
+  intervalBlocks: number;
+  authorizedSats: string;   // BigInt → string
+  lastClaimBlock: number;
+  balance: string;   // BigInt → string
+  status: SubscriptionStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 function toRecord(p: PersistedRecord): SubscriptionRecord {
   return {
     ...p,
+    tokenAddress: p.tokenAddress ?? '',
     authorizedSats: BigInt(p.authorizedSats),
-    balance:        BigInt(p.balance),
+    balance: BigInt(p.balance),
   };
 }
 
@@ -53,7 +55,7 @@ function toPersisted(r: SubscriptionRecord): PersistedRecord {
   return {
     ...r,
     authorizedSats: r.authorizedSats.toString(),
-    balance:        r.balance.toString(),
+    balance: r.balance.toString(),
   };
 }
 
@@ -61,7 +63,7 @@ function loadFromDisk(): Map<string, SubscriptionRecord> {
   const map = new Map<string, SubscriptionRecord>();
   if (!existsSync(DATA_FILE)) return map;
   try {
-    const raw       = readFileSync(DATA_FILE, 'utf-8');
+    const raw = readFileSync(DATA_FILE, 'utf-8');
     const persisted = JSON.parse(raw) as PersistedRecord[];
     for (const p of persisted) map.set(p.contractAddress, toRecord(p));
     console.log(`[Store] Loaded ${map.size} subscription(s) from ${DATA_FILE}`);
@@ -83,8 +85,8 @@ function saveToDisk(data: Map<string, SubscriptionRecord>): void {
 
 // ─── Store — load from disk on module init ────────────────────────────────────
 
-const byAddress:  Map<string, SubscriptionRecord> = loadFromDisk();
-const byCategory: Map<string, string>             = new Map(); // tokenCategory → contractAddress
+const byAddress: Map<string, SubscriptionRecord> = loadFromDisk();
+const byCategory: Map<string, string> = new Map(); // tokenCategory → contractAddress
 
 // Rebuild secondary index from loaded data
 for (const [, rec] of byAddress) byCategory.set(rec.tokenCategory, rec.contractAddress);
@@ -93,7 +95,7 @@ for (const [, rec] of byAddress) byCategory.set(rec.tokenCategory, rec.contractA
 
 export function addSubscription(record: SubscriptionRecord): void {
   byAddress.set(record.contractAddress, record);
-  byCategory.set(record.tokenCategory,  record.contractAddress);
+  byCategory.set(record.tokenCategory, record.contractAddress);
   saveToDisk(byAddress);
 }
 
@@ -144,7 +146,7 @@ export function updateSubscription(
 export function setStatus(contractAddress: string, status: SubscriptionStatus): boolean {
   const record = byAddress.get(contractAddress);
   if (!record) return false;
-  record.status    = status;
+  record.status = status;
   record.updatedAt = new Date().toISOString();
   saveToDisk(byAddress);
   return true;
@@ -161,8 +163,8 @@ export function recordClaim(
   const record = byAddress.get(contractAddress);
   if (!record) return false;
   record.lastClaimBlock = newLastClaimBlock;
-  record.balance        = newBalance;
-  record.updatedAt      = new Date().toISOString();
+  record.balance = newBalance;
+  record.updatedAt = new Date().toISOString();
   saveToDisk(byAddress);
   return true;
 }
