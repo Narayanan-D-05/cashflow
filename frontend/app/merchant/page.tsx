@@ -86,6 +86,12 @@ export default function MerchantDashboard() {
 
     useEffect(() => {
         fetchSubscriptions();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const prefillContract = urlParams.get('contractAddress');
+        const prefillToken = urlParams.get('tokenCategory');
+        if (prefillContract) setContractAddress(prefillContract);
+        if (prefillToken) setTokenCategory(prefillToken);
     }, []);
 
     const [contractAddress, setContractAddress] = useState("");

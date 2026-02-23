@@ -90,7 +90,7 @@ bch/
 │   └── dist/                       ← Compiled TypeScript output (npm published)
 │
 └── merchant/
-    └── frontend/                   ← Merchant demo app (Next.js, port 3005)
+    └── frontend/                   ← Merchant demo app (Next.js, port 3002)
         └── app/
             ├── page.tsx            ← Subscribe CTA + AI Chat interface
             ├── agent/page.tsx      ← Dedicated AI Agent chat page
@@ -104,7 +104,7 @@ bch/
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │                      Merchant Demo App                               │
-│                   http://localhost:3005                               │
+│                   http://localhost:3002                               │
 │                                                                      │
 │  page.tsx ──────── If no token ──► Subscribe CTA                    │
 │                │                       │                             │
@@ -170,10 +170,10 @@ POST /merchant/plan
 ```
 
 ### Step 2 — User Visits Merchant App
-User lands on `http://localhost:3005`. They see a "Subscribe via Cashflow" button with no existing token.
+User lands on `http://localhost:3002`. They see a "Subscribe via Cashflow" button with no existing token.
 
 ### Step 3 — Subscription Creation (Cashflow UI)
-User is redirected to `http://localhost:3001/subscription?callbackUrl=http://localhost:3005/`.
+User is redirected to `http://localhost:3001/subscription?callbackUrl=http://localhost:3002/`.
 
 The Cashflow subscription UI runs a **3-step flow**:
 
@@ -198,7 +198,7 @@ Step 3: POST /subscription/auto-fund
 ```
 
 ### Step 4 — Merchant App Access (Router402)
-User is redirected back to `http://localhost:3005/?tokenCategory=<hex>`.
+User is redirected back to `http://localhost:3002/?tokenCategory=<hex>`.
 
 The merchant app saves the `tokenCategory` to `localStorage`. Every AI agent message sends:
 
@@ -290,18 +290,18 @@ npm install
 npm run dev -- -p 3001
 ```
 
-**Terminal 3 — Merchant Demo App (port 3005):**
+**Terminal 3 — Merchant Demo App (port 3002):**
 ```bash
 cd merchant/frontend
 npm install
-npm run dev -- -p 3005
+npm run dev -- -p 3002
 ```
 
 ### 4. Open in Browser
 
 | Service | URL | Purpose |
 |---|---|---|
-| **Merchant App** | http://localhost:3005 | User-facing app with subscription CTA + AI chat |
+| **Merchant App** | http://localhost:3002 | User-facing app with subscription CTA + AI chat |
 | **Cashflow UI** | http://localhost:3001/subscription | 3-step subscription flow |
 | **Merchant Dashboard** | http://localhost:3001/merchant | Claim accumulated earnings |
 | **API Docs (Swagger)** | http://localhost:3000/docs | Interactive API documentation |

@@ -88,7 +88,7 @@ export interface ChallengeResult {
 export const api = {
   /** List all subscriptions */
   getAllSubscriptions(): Promise<SubscriptionRecord[]> {
-    return get<SubscriptionRecord[]>("/subscription/list");
+    return get<{ subscriptions: SubscriptionRecord[] }>("/subscription/list").then(r => r.subscriptions);
   },
 
   /** Get single subscription by contractAddress */

@@ -8,17 +8,17 @@ import { api, type SubscriptionRecord } from "@/lib/api";
 import { Activity, Coins, RefreshCw, AlertCircle } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active:   "text-[oklch(0.55_0.18_140)]",
-  paused:   "text-[oklch(0.65_0.20_55)]",
-  expired:  "text-[oklch(0.55_0.22_25)]",
-  cancelled:"text-[oklch(0.55_0.22_25)]",
+  active: "text-[oklch(0.55_0.18_140)]",
+  paused: "text-[oklch(0.65_0.20_55)]",
+  expired: "text-[oklch(0.55_0.22_25)]",
+  cancelled: "text-[oklch(0.55_0.22_25)]",
 };
 
 const STATUS_BADGES: Record<string, string> = {
-  active:   "bg-[oklch(0.55_0.18_140/0.15)] border-[oklch(0.55_0.18_140/0.4)] text-[oklch(0.45_0.18_140)]",
-  paused:   "bg-[oklch(0.65_0.20_55/0.15)]  border-[oklch(0.65_0.20_55/0.4)]  text-[oklch(0.50_0.20_55)]",
-  expired:  "bg-[oklch(0.55_0.22_25/0.15)]  border-[oklch(0.55_0.22_25/0.4)]  text-[oklch(0.45_0.22_25)]",
-  cancelled:"bg-[oklch(0.55_0.22_25/0.15)]  border-[oklch(0.55_0.22_25/0.4)]  text-[oklch(0.45_0.22_25)]",
+  active: "bg-[oklch(0.55_0.18_140/0.15)] border-[oklch(0.55_0.18_140/0.4)] text-[oklch(0.45_0.18_140)]",
+  paused: "bg-[oklch(0.65_0.20_55/0.15)]  border-[oklch(0.65_0.20_55/0.4)]  text-[oklch(0.50_0.20_55)]",
+  expired: "bg-[oklch(0.55_0.22_25/0.15)]  border-[oklch(0.55_0.22_25/0.4)]  text-[oklch(0.45_0.22_25)]",
+  cancelled: "bg-[oklch(0.55_0.22_25/0.15)]  border-[oklch(0.55_0.22_25/0.4)]  text-[oklch(0.45_0.22_25)]",
 };
 
 function SubscriptionCard({ sub }: { sub: SubscriptionRecord }) {
@@ -83,14 +83,32 @@ function SubscriptionCard({ sub }: { sub: SubscriptionRecord }) {
           <p className="font-mono">{new Date(sub.createdAt).toLocaleDateString()}</p>
         </div>
       </div>
+
+      {/* Action buttons */}
+      {sub.status === "active" && (
+        <div className="flex gap-2 mt-2 pt-4 border-t border-[var(--glass-border)]">
+          <button
+            onClick={() => window.open(`http://localhost:3002/?tokenCategory=${sub.tokenCategory}`, "_blank")}
+            className="flex-1 rounded-lg border border-[var(--color-brand)] text-[var(--color-brand)] hover:bg-[var(--color-brand)]/10 px-3 py-2 text-xs font-semibold transition-all text-center"
+          >
+            Test API (Demo App)
+          </button>
+          <button
+            onClick={() => window.location.href = `/merchant?contractAddress=${sub.contractAddress}&tokenCategory=${sub.tokenCategory}`}
+            className="flex-1 rounded-lg border border-[var(--glass-border)] bg-[var(--color-surface-alt)] hover:bg-[var(--color-surface-alt)]/80 text-[var(--color-text)] px-3 py-2 text-xs font-semibold transition-all text-center"
+          >
+            Withdraw (Claim)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function DashboardPage() {
-  const [subs, setSubs]       = useState<SubscriptionRecord[]>([]);
+  const [subs, setSubs] = useState<SubscriptionRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -108,9 +126,9 @@ export default function DashboardPage() {
   useEffect(() => { load(); }, []);
 
   const counts = {
-    active:    subs.filter(s => s.status === "active").length,
-    paused:    subs.filter(s => s.status === "paused").length,
-    expired:   subs.filter(s => s.status === "expired" || s.status === "cancelled").length,
+    active: subs.filter(s => s.status === "active").length,
+    paused: subs.filter(s => s.status === "paused").length,
+    expired: subs.filter(s => s.status === "expired" || s.status === "cancelled").length,
     totalSats: subs.reduce((n, s) => n + Number(s.balance), 0),
   };
 
@@ -134,10 +152,10 @@ export default function DashboardPage() {
           {/* Stat tiles */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 animate-fade-in-up delay-100">
             {[
-              { label: "Active",    value: counts.active,    icon: <Activity className="w-4 h-4" /> },
-              { label: "Paused",    value: counts.paused,    icon: <Activity className="w-4 h-4" /> },
-              { label: "Expired",   value: counts.expired,   icon: <AlertCircle className="w-4 h-4" /> },
-              { label: "Total sats",value: counts.totalSats.toLocaleString(), icon: <Coins className="w-4 h-4" /> },
+              { label: "Active", value: counts.active, icon: <Activity className="w-4 h-4" /> },
+              { label: "Paused", value: counts.paused, icon: <Activity className="w-4 h-4" /> },
+              { label: "Expired", value: counts.expired, icon: <AlertCircle className="w-4 h-4" /> },
+              { label: "Total sats", value: counts.totalSats.toLocaleString(), icon: <Coins className="w-4 h-4" /> },
             ].map(tile => (
               <div key={tile.label} className="glass rounded-xl p-4 flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-[var(--color-brand)] text-xs">

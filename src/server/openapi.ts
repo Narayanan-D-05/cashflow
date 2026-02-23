@@ -7,12 +7,12 @@
 export const openApiSpec = {
   openapi: '3.1.0',
   info: {
-    title:       'CashFlow402 API',
-    version:     '1.0.0',
+    title: 'CashFlow402 API',
+    version: '1.0.0',
     description: 'BCH-native HTTP-402 micropayment and CashToken subscription protocol. Pay-per-call and recurring subscription access control backed by Bitcoin Cash smart contracts on ChipNet / Mainnet.',
     contact: {
-      name:  'CashFlow402',
-      url:   'https://github.com/Narayanan-D-05/cashflow',
+      name: 'CashFlow402',
+      url: 'https://github.com/Narayanan-D-05/cashflow',
       email: 'hi@cashflow402.dev',
     },
     license: { name: 'ISC' },
@@ -21,23 +21,24 @@ export const openApiSpec = {
     { url: 'http://localhost:3000', description: 'Local dev (ChipNet)' },
   ],
   tags: [
-    { name: 'Health',       description: 'Service liveness' },
-    { name: 'Per-call',     description: 'HTTP-402 pay-per-call flow' },
+    { name: 'Health', description: 'Service liveness' },
+    { name: 'Per-call', description: 'HTTP-402 pay-per-call flow' },
     { name: 'Subscription', description: 'CashToken subscription lifecycle' },
-    { name: 'Webhook',      description: 'On-chain event notifications' },
-    { name: 'Demo',         description: 'Protected demo endpoints' },
+    { name: 'Webhook', description: 'On-chain event notifications' },
+    { name: 'Demo', description: 'Protected demo endpoints' },
+    { name: 'Merchant', description: 'Merchant dashboard operations' },
   ],
   components: {
     securitySchemes: {
       BearerJWT: {
-        type:         'http',
-        scheme:       'bearer',
+        type: 'http',
+        scheme: 'bearer',
         bearerFormat: 'JWT',
-        description:  'JWT issued by POST /verify-payment (per-call) or GET /subscription/verify (subscription)',
+        description: 'JWT issued by POST /verify-payment (per-call) or GET /subscription/verify (subscription)',
       },
       PaymentToken: {
         type: 'apiKey',
-        in:   'header',
+        in: 'header',
         name: 'X-Payment-Token',
         description: 'Alternative to Authorization header for payment JWTs',
       },
@@ -47,28 +48,28 @@ export const openApiSpec = {
         type: 'object',
         required: ['error'],
         properties: {
-          error:  { type: 'string', description: 'Human-readable error message' },
+          error: { type: 'string', description: 'Human-readable error message' },
           detail: { type: 'string', description: 'Additional context (optional)' },
-          hint:   { type: 'string', description: 'Suggested remediation (optional)' },
+          hint: { type: 'string', description: 'Suggested remediation (optional)' },
         },
       },
       PaymentChallenge: {
         type: 'object',
         required: ['nonce', 'paymentUri', 'amountSats', 'merchantAddress', 'verifyUrl', 'expiresAt'],
         properties: {
-          nonce:           { type: 'string', description: 'Single-use nonce (expires in 2 minutes)' },
-          paymentUri:      { type: 'string', description: 'BIP-21 payment URI' },
-          amountSats:      { type: 'integer', description: 'Required payment amount in satoshis' },
+          nonce: { type: 'string', description: 'Single-use nonce (expires in 2 minutes)' },
+          paymentUri: { type: 'string', description: 'BIP-21 payment URI' },
+          amountSats: { type: 'integer', description: 'Required payment amount in satoshis' },
           merchantAddress: { type: 'string', description: 'Merchant BCH address' },
-          verifyUrl:       { type: 'string', description: 'POST here with { txid, nonce } to redeem' },
-          expiresAt:       { type: 'integer', description: 'Unix timestamp when this challenge expires' },
+          verifyUrl: { type: 'string', description: 'POST here with { txid, nonce } to redeem' },
+          expiresAt: { type: 'integer', description: 'Unix timestamp when this challenge expires' },
         },
       },
       AccessToken: {
         type: 'object',
         required: ['accessToken', 'expiresInSeconds'],
         properties: {
-          accessToken:      { type: 'string', description: 'Signed JWT for API access' },
+          accessToken: { type: 'string', description: 'Signed JWT for API access' },
           expiresInSeconds: { type: 'integer', description: 'Token lifetime in seconds' },
         },
       },
@@ -76,20 +77,20 @@ export const openApiSpec = {
         type: 'object',
         required: ['contractAddress', 'tokenCategory', 'status', 'intervalBlocks', 'authorizedSats', 'balance'],
         properties: {
-          contractAddress:  { type: 'string', description: 'BCH P2SH address of the covenant' },
-          tokenAddress:     { type: 'string', description: 'Token-address form of the contract (for NFT outputs)' },
-          tokenCategory:    { type: 'string', description: 'CashToken category hex (32-byte genesis txid)' },
-          merchantPkh:      { type: 'string', description: 'Merchant public key hash (20-byte hex)' },
-          subscriberPkh:    { type: 'string', description: 'Subscriber public key hash (20-byte hex)' },
-          subscriberAddress:{ type: 'string', description: 'Subscriber BCH address' },
-          merchantAddress:  { type: 'string', description: 'Merchant BCH address' },
-          intervalBlocks:   { type: 'integer', description: 'Blocks between claim intervals (144 ≈ 1 day)' },
-          authorizedSats:   { type: 'string', description: 'Max sats merchant may claim per interval' },
-          lastClaimBlock:   { type: 'integer', description: 'Block height of last claim (or subscription start)' },
-          balance:          { type: 'string', description: 'Current contract UTXO balance in satoshis' },
-          status:           { type: 'string', enum: ['pending_funding', 'active', 'cancelled', 'expired'] },
-          createdAt:        { type: 'string', format: 'date-time' },
-          updatedAt:        { type: 'string', format: 'date-time' },
+          contractAddress: { type: 'string', description: 'BCH P2SH address of the covenant' },
+          tokenAddress: { type: 'string', description: 'Token-address form of the contract (for NFT outputs)' },
+          tokenCategory: { type: 'string', description: 'CashToken category hex (32-byte genesis txid)' },
+          merchantPkh: { type: 'string', description: 'Merchant public key hash (20-byte hex)' },
+          subscriberPkh: { type: 'string', description: 'Subscriber public key hash (20-byte hex)' },
+          subscriberAddress: { type: 'string', description: 'Subscriber BCH address' },
+          merchantAddress: { type: 'string', description: 'Merchant BCH address' },
+          intervalBlocks: { type: 'integer', description: 'Blocks between claim intervals (144 ≈ 1 day)' },
+          authorizedSats: { type: 'string', description: 'Max sats merchant may claim per interval' },
+          lastClaimBlock: { type: 'integer', description: 'Block height of last claim (or subscription start)' },
+          balance: { type: 'string', description: 'Current contract UTXO balance in satoshis' },
+          status: { type: 'string', enum: ['pending_funding', 'active', 'cancelled', 'expired'] },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       DeploySubscriptionRequest: {
@@ -97,32 +98,32 @@ export const openApiSpec = {
         required: ['subscriberAddress'],
         properties: {
           subscriberAddress: { type: 'string', description: 'BCH address of the subscriber (bchtest:… or bitcoincash:…)' },
-          intervalBlocks:    { type: 'integer', default: 144, description: 'Blocks between claim intervals' },
-          authorizedSats:    { type: 'integer', default: 50000, description: 'Max sats per interval' },
+          intervalBlocks: { type: 'integer', default: 144, description: 'Blocks between claim intervals' },
+          authorizedSats: { type: 'integer', default: 50000, description: 'Max sats per interval' },
         },
       },
       DeploySubscriptionResponse: {
         type: 'object',
         required: ['contractAddress', 'tokenAddress', 'tokenCategory', 'genesisCommitment', 'fundingUri', 'startBlock'],
         properties: {
-          contractAddress:     { type: 'string' },
-          tokenAddress:        { type: 'string', description: 'Send the genesis NFT to this address' },
-          tokenCategory:       { type: 'string', description: 'Placeholder category (updated after funding confirmed)' },
-          intervalBlocks:      { type: 'integer' },
-          authorizedSats:      { type: 'integer' },
-          genesisCommitment:   { type: 'string', description: 'Required NFT commitment (16-byte hex: lastClaimBlock || authorizedSats)' },
-          fundingUri:          { type: 'string', description: 'BIP-21 URI for the genesis funding transaction' },
-          startBlock:          { type: 'integer' },
+          contractAddress: { type: 'string' },
+          tokenAddress: { type: 'string', description: 'Send the genesis NFT to this address' },
+          tokenCategory: { type: 'string', description: 'Placeholder category (updated after funding confirmed)' },
+          intervalBlocks: { type: 'integer' },
+          authorizedSats: { type: 'integer' },
+          genesisCommitment: { type: 'string', description: 'Required NFT commitment (16-byte hex: lastClaimBlock || authorizedSats)' },
+          fundingUri: { type: 'string', description: 'BIP-21 URI for the genesis funding transaction' },
+          startBlock: { type: 'integer' },
           fundingInstructions: { type: 'string' },
-          hint:                { type: 'string' },
+          hint: { type: 'string' },
         },
       },
       FundConfirmRequest: {
         type: 'object',
         required: ['txid', 'tokenCategory', 'contractAddress'],
         properties: {
-          txid:            { type: 'string', description: 'Txid of the funding transaction' },
-          tokenCategory:   { type: 'string', description: 'NFT token category (32-byte hex = genesis txid)' },
+          txid: { type: 'string', description: 'Txid of the funding transaction' },
+          tokenCategory: { type: 'string', description: 'NFT token category (32-byte hex = genesis txid)' },
           contractAddress: { type: 'string', description: 'Contract P2SH address' },
         },
       },
@@ -131,15 +132,15 @@ export const openApiSpec = {
         required: ['contractAddress', 'tokenCategory'],
         properties: {
           contractAddress: { type: 'string' },
-          tokenCategory:   { type: 'string' },
+          tokenCategory: { type: 'string' },
         },
       },
       ClaimResponse: {
         type: 'object',
         required: ['txid', 'claimedSats', 'nextClaimAfterBlock'],
         properties: {
-          txid:                { type: 'string', description: 'Broadcast txid of the claim transaction' },
-          claimedSats:         { type: 'integer', description: 'Satoshis transferred to merchant' },
+          txid: { type: 'string', description: 'Broadcast txid of the claim transaction' },
+          claimedSats: { type: 'integer', description: 'Satoshis transferred to merchant' },
           nextClaimAfterBlock: { type: 'integer', description: 'Block height after which next claim is valid' },
         },
       },
@@ -148,14 +149,14 @@ export const openApiSpec = {
         required: ['contractAddress', 'subscriberWif'],
         properties: {
           contractAddress: { type: 'string' },
-          subscriberWif:   { type: 'string', description: 'Subscriber WIF private key (demo only — use client-side signing in production)' },
+          subscriberWif: { type: 'string', description: 'Subscriber WIF private key (demo only — use client-side signing in production)' },
         },
       },
       VerifyPaymentRequest: {
         type: 'object',
         required: ['txid', 'nonce'],
         properties: {
-          txid:  { type: 'string', description: 'BCH transaction id of the payment' },
+          txid: { type: 'string', description: 'BCH transaction id of the payment' },
           nonce: { type: 'string', description: 'One-time nonce from the 402 challenge' },
         },
       },
@@ -163,18 +164,18 @@ export const openApiSpec = {
         type: 'object',
         required: ['txid', 'confirmations'],
         properties: {
-          txid:            { type: 'string' },
+          txid: { type: 'string' },
           contractAddress: { type: 'string' },
-          tokenCategory:   { type: 'string' },
-          confirmations:   { type: 'integer' },
+          tokenCategory: { type: 'string' },
+          confirmations: { type: 'integer' },
         },
       },
       WebhookBlockRequest: {
         type: 'object',
         required: ['height'],
         properties: {
-          height:    { type: 'integer', description: 'New block height' },
-          hash:      { type: 'string', description: 'Block hash' },
+          height: { type: 'integer', description: 'New block height' },
+          hash: { type: 'string', description: 'Block hash' },
         },
       },
     },
@@ -220,8 +221,8 @@ export const openApiSpec = {
     // ── Health ──────────────────────────────────────────────────────────────
     '/health': {
       get: {
-        tags:        ['Health'],
-        summary:     'Liveness check',
+        tags: ['Health'],
+        summary: 'Liveness check',
         operationId: 'getHealth',
         responses: {
           '200': {
@@ -231,9 +232,9 @@ export const openApiSpec = {
                 schema: {
                   type: 'object',
                   properties: {
-                    status:    { type: 'string', example: 'ok' },
-                    service:   { type: 'string', example: 'CashFlow402' },
-                    version:   { type: 'string', example: '1.0.0' },
+                    status: { type: 'string', example: 'ok' },
+                    service: { type: 'string', example: 'CashFlow402' },
+                    version: { type: 'string', example: '1.0.0' },
                     timestamp: { type: 'string', format: 'date-time' },
                   },
                 },
@@ -247,8 +248,8 @@ export const openApiSpec = {
     // ── Per-call: Challenge ──────────────────────────────────────────────────
     '/payment/challenge': {
       get: {
-        tags:        ['Per-call'],
-        summary:     'Get a manual payment challenge',
+        tags: ['Per-call'],
+        summary: 'Get a manual payment challenge',
         description: 'Returns a BIP-21 payment URI + nonce without gating a resource. Useful for SDK testing.',
         operationId: 'getPaymentChallenge',
         responses: {
@@ -267,8 +268,8 @@ export const openApiSpec = {
     // ── Per-call: Verify ─────────────────────────────────────────────────────
     '/verify-payment': {
       post: {
-        tags:        ['Per-call'],
-        summary:     'Verify a BCH payment and receive an access JWT',
+        tags: ['Per-call'],
+        summary: 'Verify a BCH payment and receive an access JWT',
         description: 'Consumes the nonce, verifies the on-chain transaction output, and issues a short-lived JWT.',
         operationId: 'verifyPayment',
         requestBody: {
@@ -289,8 +290,8 @@ export const openApiSpec = {
     // ── Subscription: Deploy ─────────────────────────────────────────────────
     '/deploy-subscription': {
       post: {
-        tags:        ['Subscription'],
-        summary:     'Deploy a new AutoPaySubscription covenant',
+        tags: ['Subscription'],
+        summary: 'Deploy a new AutoPaySubscription covenant',
         description: 'Derives the P2SH covenant address from merchant + subscriber PKH + interval. Non-broadcast — returns funding instructions for the genesis NFT transaction.',
         operationId: 'deploySubscription',
         requestBody: {
@@ -314,8 +315,8 @@ export const openApiSpec = {
     // ── Subscription: Fund Confirm ────────────────────────────────────────────
     '/subscription/fund-confirm': {
       post: {
-        tags:        ['Subscription'],
-        summary:     'Confirm a subscription funding transaction',
+        tags: ['Subscription'],
+        summary: 'Confirm a subscription funding transaction',
         description: 'Subscriber notifies the server after broadcasting the genesis NFT tx. Server verifies on-chain and transitions the subscription to `active`.',
         operationId: 'fundConfirm',
         requestBody: {
@@ -330,12 +331,12 @@ export const openApiSpec = {
                 schema: {
                   type: 'object',
                   properties: {
-                    message:         { type: 'string' },
+                    message: { type: 'string' },
                     contractAddress: { type: 'string' },
-                    tokenCategory:   { type: 'string' },
-                    balance:         { type: 'integer' },
-                    commitment:      { type: 'string' },
-                    record:          { $ref: '#/components/schemas/SubscriptionRecord' },
+                    tokenCategory: { type: 'string' },
+                    balance: { type: 'integer' },
+                    commitment: { type: 'string' },
+                    record: { $ref: '#/components/schemas/SubscriptionRecord' },
                   },
                 },
               },
@@ -351,17 +352,17 @@ export const openApiSpec = {
     // ── Subscription: Status ─────────────────────────────────────────────────
     '/subscription/status/{contractAddress}': {
       get: {
-        tags:        ['Subscription'],
-        summary:     'Get subscription status',
+        tags: ['Subscription'],
+        summary: 'Get subscription status',
         description: 'Returns the current state including on-chain balance, claim eligibility, and next claim block.',
         operationId: 'getSubscriptionStatus',
         parameters: [
           {
-            name:        'contractAddress',
-            in:          'path',
-            required:    true,
+            name: 'contractAddress',
+            in: 'path',
+            required: true,
             description: 'BCH P2SH address of the subscription covenant',
-            schema:      { type: 'string' },
+            schema: { type: 'string' },
           },
         ],
         responses: {
@@ -375,10 +376,10 @@ export const openApiSpec = {
                     {
                       type: 'object',
                       properties: {
-                        currentBlock:         { type: 'integer' },
-                        nextClaimAfterBlock:  { type: 'integer' },
+                        currentBlock: { type: 'integer' },
+                        nextClaimAfterBlock: { type: 'integer' },
                         blocksUntilNextClaim: { type: 'integer' },
-                        canClaimNow:          { type: 'boolean' },
+                        canClaimNow: { type: 'boolean' },
                       },
                     },
                   ],
@@ -394,8 +395,8 @@ export const openApiSpec = {
     // ── Subscription: List ────────────────────────────────────────────────────
     '/subscription/list': {
       get: {
-        tags:        ['Subscription'],
-        summary:     'List all subscriptions',
+        tags: ['Subscription'],
+        summary: 'List all subscriptions',
         description: 'Returns all subscription records managed by this server instance. In-memory only — resets on server restart.',
         operationId: 'listSubscriptions',
         responses: {
@@ -407,7 +408,7 @@ export const openApiSpec = {
                   type: 'object',
                   properties: {
                     subscriptions: {
-                      type:  'array',
+                      type: 'array',
                       items: { $ref: '#/components/schemas/SubscriptionRecord' },
                     },
                     count: { type: 'integer' },
@@ -423,8 +424,8 @@ export const openApiSpec = {
     // ── Subscription: Claim ───────────────────────────────────────────────────
     '/subscription/claim': {
       post: {
-        tags:        ['Subscription'],
-        summary:     'Merchant claims one interval payment',
+        tags: ['Subscription'],
+        summary: 'Merchant claims one interval payment',
         description: 'Builds and broadcasts a CashScript claim transaction. The covenant verifies that the interval has elapsed and that the claimed amount does not exceed `authorizedSats`. Updates the mutable NFT commitment.',
         operationId: 'claimSubscription',
         requestBody: {
@@ -449,8 +450,8 @@ export const openApiSpec = {
     // ── Subscription: Cancel ──────────────────────────────────────────────────
     '/subscription/cancel': {
       post: {
-        tags:        ['Subscription'],
-        summary:     'Subscriber cancels a subscription',
+        tags: ['Subscription'],
+        summary: 'Subscriber cancels a subscription',
         description: 'Broadcasts the cancel path of the covenant — sweeps remaining balance back to the subscriber. **Demo only**: WIF passed in body. Production should sign client-side.',
         operationId: 'cancelSubscription',
         requestBody: {
@@ -465,8 +466,8 @@ export const openApiSpec = {
                 schema: {
                   type: 'object',
                   properties: {
-                    message:      { type: 'string' },
-                    txid:         { type: 'string' },
+                    message: { type: 'string' },
+                    txid: { type: 'string' },
                     refundedSats: { type: 'string' },
                   },
                 },
@@ -482,24 +483,24 @@ export const openApiSpec = {
     // ── Subscription: Verify (issue JWT) ──────────────────────────────────────
     '/subscription/verify': {
       get: {
-        tags:        ['Subscription'],
-        summary:     'Issue a subscription access JWT',
+        tags: ['Subscription'],
+        summary: 'Issue a subscription access JWT',
         description: 'Returns a signed JWT for an active subscription. Provide the token category via `X-Subscription-Token` header or `?tokenCategory=` query param.',
         operationId: 'verifySubscription',
         parameters: [
           {
-            name:        'tokenCategory',
-            in:          'query',
-            required:    false,
+            name: 'tokenCategory',
+            in: 'query',
+            required: false,
             description: 'CashToken category hex (alternative to header)',
-            schema:      { type: 'string' },
+            schema: { type: 'string' },
           },
           {
-            name:        'X-Subscription-Token',
-            in:          'header',
-            required:    false,
+            name: 'X-Subscription-Token',
+            in: 'header',
+            required: false,
             description: 'CashToken category hex',
-            schema:      { type: 'string' },
+            schema: { type: 'string' },
           },
         ],
         responses: {
@@ -529,17 +530,17 @@ export const openApiSpec = {
     // ── Webhook: Tx Confirmed ─────────────────────────────────────────────────
     '/webhook/tx-confirmed': {
       post: {
-        tags:        ['Webhook'],
-        summary:     'Notify server of a confirmed transaction',
+        tags: ['Webhook'],
+        summary: 'Notify server of a confirmed transaction',
         description: 'Called by a block explorer, Chaingraph, or monitoring service when a relevant tx is confirmed. Requires `X-Webhook-Secret` header.',
         operationId: 'webhookTxConfirmed',
-        security:    [],
+        security: [],
         parameters: [
           {
-            name:     'X-Webhook-Secret',
-            in:       'header',
+            name: 'X-Webhook-Secret',
+            in: 'header',
             required: true,
-            schema:   { type: 'string' },
+            schema: { type: 'string' },
           },
         ],
         requestBody: {
@@ -559,17 +560,17 @@ export const openApiSpec = {
     // ── Webhook: Block ────────────────────────────────────────────────────────
     '/webhook/block': {
       post: {
-        tags:        ['Webhook'],
-        summary:     'Notify server of a new block',
+        tags: ['Webhook'],
+        summary: 'Notify server of a new block',
         description: 'Called when a new BCH block is found. Server refreshes subscription balances.',
         operationId: 'webhookBlock',
-        security:    [],
+        security: [],
         parameters: [
           {
-            name:     'X-Webhook-Secret',
-            in:       'header',
+            name: 'X-Webhook-Secret',
+            in: 'header',
             required: true,
-            schema:   { type: 'string' },
+            schema: { type: 'string' },
           },
         ],
         requestBody: {
@@ -586,14 +587,40 @@ export const openApiSpec = {
       },
     },
 
+    // ── Merchant ──────────────────────────────────────────────────────────────
+    '/merchant/wallet-balance': {
+      get: {
+        tags: ['Merchant'],
+        summary: 'Get the merchant\'s direct wallet balance',
+        description: 'Queries the actual BCH UTXO balance of the merchantAddress.',
+        operationId: 'getMerchantWalletBalance',
+        responses: {
+          '200': {
+            description: 'Wallet balance retrieved',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    address: { type: 'string' },
+                    balanceSats: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
     // ── Demo: protected endpoint ──────────────────────────────────────────────
     '/api/premium/hello': {
       get: {
-        tags:        ['Demo'],
-        summary:     'Token-gated demo endpoint (per-call)',
+        tags: ['Demo'],
+        summary: 'Token-gated demo endpoint (per-call)',
         description: 'Returns 402 with a payment challenge when called without a valid JWT. Pay the challenge, call POST /verify-payment, then retry with `Authorization: Bearer <token>`.',
         operationId: 'premiumHello',
-        security:    [{ BearerJWT: [] }, { PaymentToken: [] }],
+        security: [{ BearerJWT: [] }, { PaymentToken: [] }],
         responses: {
           '200': {
             description: 'Authorized — greeting returned',
@@ -603,7 +630,7 @@ export const openApiSpec = {
                   type: 'object',
                   properties: {
                     message: { type: 'string' },
-                    data:    { type: 'object' },
+                    data: { type: 'object' },
                   },
                 },
               },
@@ -617,11 +644,11 @@ export const openApiSpec = {
     // ── Demo: second protected endpoint ───────────────────────────────────────
     '/api/premium/data': {
       get: {
-        tags:        ['Demo'],
-        summary:     'Token-gated demo endpoint (per-call)',
+        tags: ['Demo'],
+        summary: 'Token-gated demo endpoint (per-call)',
         description: 'Same as /api/premium/hello — demonstrates gating any arbitrary endpoint.',
         operationId: 'premiumData',
-        security:    [{ BearerJWT: [] }, { PaymentToken: [] }],
+        security: [{ BearerJWT: [] }, { PaymentToken: [] }],
         responses: {
           '200': {
             description: 'Authorized — data returned',
