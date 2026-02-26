@@ -2,11 +2,11 @@ import Link from "next/link";
 import { Github, Zap } from "lucide-react";
 
 const LINKS = [
-  { label: "Home",       href: "/"          },
-  { label: "Dashboard",  href: "/dashboard" },
-  { label: "Demo",       href: "/demo"      },
-  { label: "API Docs",   href: "http://localhost:3000/docs", external: true },
-  { label: "GitHub",     href: "https://github.com/narayanan-me/cashflow",  external: true },
+  { label: "Home", href: "/" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Demo", href: "/demo" },
+  { label: "API Docs", href: "http://localhost:3000/docs", external: true },
+  { label: "GitHub", href: "https://github.com/Narayanan-D-05/cashflow", external: true },
 ];
 
 export default function Footer() {

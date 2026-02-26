@@ -13,9 +13,9 @@ const TYPEWRITER_WORDS = [
 ];
 
 export default function HeroSection() {
-  const [wordIdx, setWordIdx]   = useState(0);
+  const [wordIdx, setWordIdx] = useState(0);
   const [displayed, setDisplayed] = useState("");
-  const [deleting, setDeleting]  = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function HeroSection() {
           </Link>
 
           <a
-            href="https://github.com/narayanan-me/cashflow"
+            href="https://github.com/Narayanan-D-05/cashflow"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-6 py-3 rounded-xl glass border-brand text-[var(--color-text)] hover:text-[var(--color-brand)] hover:glow-sm transition-all duration-200"
@@ -112,13 +112,13 @@ export default function HeroSection() {
             <span className="ml-2 text-xs text-[var(--color-text-faint)] font-mono">HTTP 402 flow</span>
           </div>
           <pre className="text-xs font-mono overflow-x-auto leading-relaxed">
-<code><span className="text-[var(--color-text-faint)]"># 1. Hit protected endpoint → 402</span>
-<span className="text-[var(--color-brand)]">GET /api/data</span>  →  <span className="text-[oklch(0.65_0.20_55)]">402 Payment Required</span>
-   <span className="text-[var(--color-text-faint)]">Payment-Address: bitcoincash:qr…</span>
+            <code><span className="text-[var(--color-text-faint)]"># 1. Hit protected endpoint → 402</span>
+              <span className="text-[var(--color-brand)]">GET /api/data</span>  →  <span className="text-[oklch(0.65_0.20_55)]">402 Payment Required</span>
+              <span className="text-[var(--color-text-faint)]">Payment-Address: bitcoincash:qr…</span>
 
-<span className="text-[var(--color-text-faint)]"># 2. Pay → verify → access</span>
-<span className="text-[var(--color-brand)]">POST /pay/verify</span>  →  <span className="text-[oklch(0.55_0.18_140)]">200 OK</span>  +  Bearer token
-<span className="text-[var(--color-brand)]">GET /api/data</span>  →  <span className="text-[oklch(0.55_0.18_140)]">200 OK</span>  ✓</code>
+              <span className="text-[var(--color-text-faint)]"># 2. Pay → verify → access</span>
+              <span className="text-[var(--color-brand)]">POST /pay/verify</span>  →  <span className="text-[oklch(0.55_0.18_140)]">200 OK</span>  +  Bearer token
+              <span className="text-[var(--color-brand)]">GET /api/data</span>  →  <span className="text-[oklch(0.55_0.18_140)]">200 OK</span>  ✓</code>
           </pre>
         </div>
 

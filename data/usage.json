@@ -2080,5 +2080,71 @@
       }
     ],
     "lastUsedAt": "2026-02-22T11:15:33.997Z"
+  },
+  {
+    "tokenCategory": "68ac354c99181220659ac35a53dc4af436c4ed1b150ed887350c42b9bdec46af",
+    "contractAddress": "bchtest:p0zmd2egpzqpxy425pqautkxugd3y047sxgqc5t9ha5c7zd9u7as2ax9zx44k",
+    "pendingSats": "0",
+    "totalSats": "4000",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-25T17:28:23.747Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "f02097c1"
+      },
+      {
+        "timestamp": "2026-02-25T17:28:18.862Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "ceedd32a"
+      },
+      {
+        "timestamp": "2026-02-25T17:28:14.179Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "c5f1a136"
+      },
+      {
+        "timestamp": "2026-02-25T17:28:05.298Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "1c07c810"
+      },
+      {
+        "timestamp": "2026-02-25T17:27:57.165Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "fa14fe86"
+      }
+    ],
+    "lastUsedAt": "2026-02-25T17:28:23.747Z"
+  },
+  {
+    "tokenCategory": "57703c554dd834a89786833431f1330955022e7fa2060c98ef1d0eaeebc7a0bd",
+    "contractAddress": "bchtest:pdlrhhxvje3u3mhrqyp0gfmk8nrx7s9ep9x878rsmq6cd5n9x7f8v5el39dc2",
+    "pendingSats": "0",
+    "totalSats": "2400",
+    "recentCalls": [
+      {
+        "timestamp": "2026-02-25T17:32:23.832Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "d848c871"
+      },
+      {
+        "timestamp": "2026-02-25T17:31:05.852Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "0173e3f6"
+      },
+      {
+        "timestamp": "2026-02-25T17:30:58.669Z",
+        "apiPath": "/api/subscription/data",
+        "costSats": 800,
+        "requestId": "df312e53"
+      }
+    ],
+    "lastUsedAt": "2026-02-25T17:32:23.832Z"
   }
 ]
