@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Zap, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -36,9 +37,7 @@ export default function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-brand)] text-[oklch(0.12_0.01_85)] group-hover:glow-md transition-all duration-200">
-            <Zap className="w-4 h-4" />
-          </span>
+          <Image src="/cashflow402.jpg" alt="CashFlow402 Logo" width={32} height={32} className="rounded-lg object-cover group-hover:glow-md transition-all duration-200" />
           <span className="font-bold text-lg font-[var(--font-space-grotesk)] group-hover:text-gradient transition-all">
             CashFlow<span className="text-[var(--color-brand)]">402</span>
           </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Zap, ArrowRight, Github } from "lucide-react";
 
 const TYPEWRITER_WORDS = [
@@ -56,9 +57,14 @@ export default function HeroSection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-32 text-center">
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border-brand text-xs font-mono uppercase tracking-widest text-[var(--color-brand)] mb-8 animate-fade-in-up">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border-brand text-xs font-mono uppercase tracking-widest text-[var(--color-brand)] mb-6 animate-fade-in-up">
           <Zap className="w-3 h-3" />
           HTTP 402 · Bitcoin Cash
+        </div>
+
+        {/* Logo */}
+        <div className="flex justify-center mb-6 animate-fade-in-up delay-100">
+          <Image src="/cashflow402.jpg" alt="CashFlow402 Logo" width={160} height={160} className="rounded-3xl shadow-[0_0_30px_rgba(255,160,0,0.3)] border border-[var(--color-brand)]/50" />
         </div>
 
         {/* Heading */}

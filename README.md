@@ -100,49 +100,7 @@ bch/
 
 ## System Architecture
 
-```mermaid
-graph TD
-    subgraph Client [Client Side]
-        User[User Wallet / Browser]
-        MA[Merchant App UI\nport 3002]
-        CUI[Cashflow Subscription UI\nport 3001]
-    end
-
-    subgraph Backend [CashFlow402 Backend\nport 3000]
-        API[Express API Routes]
-        Meter[Usage Meter & Store]
-        TxV[Tx Verifier & Script Builder]
-    end
-
-    subgraph Blockchain [Bitcoin Cash Network]
-        EL[Electrum Server\nchipnet.imaginary.cash:50004]
-        BCH[BCH ChipNet Ledger]
-        Contract[(AutoPaySubscription\nCovenant Contract)]
-    end
-
-    %% Client Interactions
-    User -->|Visits / Prompts| MA
-    MA -->|Redirects without token| CUI
-    
-    %% API Interactions
-    CUI -->|POST /subscription/create-session| API
-    User -->|Funds Address| BCH
-    CUI -->|POST /subscription/auto-fund| API
-    MA -->|GET /api/subscription/data\nw/ X-Token| API
-    
-    %% Internal Backend
-    API <-->|Tracks off-chain state| Meter
-    API <-->|Builds Tx & Validates| TxV
-    
-    %% Blockchain Interactions
-    API -->|WSS connection| EL
-    EL <--> BCH
-    API -->|Broadcast genesis/claim Tx| EL
-    
-    %% Contract Actions
-    BCH -->|Locks tBCH + NFT in| Contract
-    Contract -->|Verifies Claim Signature| BCH
-```
+![System Architecture](frontend/public/flow.png)
 
 ---
 
