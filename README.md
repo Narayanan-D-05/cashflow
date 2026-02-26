@@ -7,7 +7,6 @@ Pay-per-call access control and recurring subscriptions backed by Bitcoin Cash s
 > 📦 **npm package:** [`cashflow402-bch`](https://www.npmjs.com/package/cashflow402-bch)
 > 🐙 **GitHub:** [Narayanan-D-05/cashflow](https://github.com/Narayanan-D-05/cashflow)
 > 🌐 **Network:** ChipNet (BCH Testnet)
-> 👤 **Author:** Narayanan D — `narayanan.27csb@licet.ac.in`
 
 ---
 
